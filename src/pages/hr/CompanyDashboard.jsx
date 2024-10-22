@@ -184,10 +184,12 @@ const CompanyDashboard = () => {
                 Onboard Employee
                 </Button>
             </Link>
-            <Button variant="outline" className="w-full">
-              <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
-              Process Payroll
-            </Button>
+            <Link to="/hr/payroll-process">
+              <Button variant="outline" className="w-full">
+                <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
+                Process Payroll
+              </Button>
+            </Link>
             <Button variant="outline" className="w-full">
               <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
               Leave Requests

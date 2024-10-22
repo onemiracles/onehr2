@@ -8,6 +8,8 @@ export const Button = forwardRef(({ children, className, variant = 'primary', si
   const variantClasses = {
     primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
     secondary: 'bg-secondary-600 hover:bg-secondary-700 text-white focus:ring-secondary-500',
+    warning: 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-400',
+    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
     outline: 'dark:text-white dark:border-white bg-transparent border border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900 focus:ring-primary-500',
   };
   const sizeClasses = {
@@ -221,7 +223,7 @@ export const Progress = forwardRef(({ value, max = 100, className, ...props }, r
   );
 });
 
-const Tabs = React.forwardRef(({ 
+export const Tabs = React.forwardRef(({ 
     value, 
     onChange, 
     tabs = [], 
@@ -280,7 +282,7 @@ const Tabs = React.forwardRef(({
   });
   
   // TabPanel component for content
-  const TabPanel = React.forwardRef(({ children, value, tabValue, className, ...props }, ref) => {
+  export const TabPanel = React.forwardRef(({ children, value, tabValue, className, ...props }, ref) => {
     if (value !== tabValue) return null;
   
     return (
@@ -294,6 +296,3 @@ const Tabs = React.forwardRef(({
       </div>
     );
   });
-  
-  // Export both components
-  export { Tabs, TabPanel };
