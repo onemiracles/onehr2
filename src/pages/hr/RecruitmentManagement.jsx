@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, Select, Spinner, Modal, Table, Progress } from '../components/ui';
+import { Card, Button, Input, Select, Spinner, Modal, Table, Progress } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUserPlus,
@@ -16,7 +16,8 @@ import {
   faCalendarAlt,
   faEnvelope,
   faPhone,
-  faFileAlt
+  faFileAlt,
+  faUser
 } from '@fortawesome/free-solid-svg-icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -34,6 +35,321 @@ const RecruitmentManagement = () => {
   useEffect(() => {
     fetchRecruitmentData();
   }, []);
+
+
+
+// Modal helper functions
+const getModalTitle = () => {
+  if (!modalContent) return '';
+  if (modalContent === 'newJob') return 'Add New Job Posting';
+  if (modalContent.type === 'viewCandidate') return 'Candidate Details';
+  if (modalContent.type === 'scheduleInterview') return 'Schedule Interview';
+  return '';
+};
+
+const renderModalContent = () => {
+  if (!modalContent) return null;
+
+  if (modalContent === 'newJob') {
+    return <JobPostingForm />;
+  }
+
+  if (modalContent.type === 'viewCandidate') {
+    return <CandidateDetails candidate={modalContent.data} />;
+  }
+
+  if (modalContent.type === 'scheduleInterview') {
+    return <InterviewScheduler candidate={modalContent.data} />;
+  }
+
+  return null;
+};
+
+// Form Components
+const JobPostingForm = () => {
+  const [formData, setFormData] = useState({
+    title: '',
+    department: '',
+    location: '',
+    type: 'Full-time',
+    salary: '',
+    description: '',
+    requirements: '',
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Handle job posting submission
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        label="Job Title"
+        name="title"
+        value={formData.title}
+        onChange={handleInputChange}
+        required
+      />
+      <Select
+        label="Department"
+        name="department"
+        value={formData.department}
+        onChange={handleInputChange}
+        required
+      >
+        <option value="">Select Department</option>
+        <option value="Engineering">Engineering</option>
+        <option value="Product">Product</option>
+        <option value="Design">Design</option>
+        <option value="Marketing">Marketing</option>
+        <option value="Sales">Sales</option>
+      </Select>
+      <Input
+        label="Location"
+        name="location"
+        value={formData.location}
+        onChange={handleInputChange}
+        required
+      />
+      <Select
+        label="Employment Type"
+        name="type"
+        value={formData.type}
+        onChange={handleInputChange}
+        required
+      >
+        <option value="Full-time">Full-time</option>
+        <option value="Part-time">Part-time</option>
+        <option value="Contract">Contract</option>
+        <option value="Internship">Internship</option>
+      </Select>
+      <Input
+        label="Salary Range"
+        name="salary"
+        value={formData.salary}
+        onChange={handleInputChange}
+        placeholder="e.g., $80,000 - $100,000"
+        required
+      />
+      <Input
+        label="Job Description"
+        name="description"
+        value={formData.description}
+        onChange={handleInputChange}
+        type="textarea"
+        rows={4}
+        required
+      />
+      <Input
+        label="Requirements"
+        name="requirements"
+        value={formData.requirements}
+        onChange={handleInputChange}
+        type="textarea"
+        rows={4}
+        placeholder="Enter each requirement on a new line"
+        required
+      />
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary">
+          Create Job Posting
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+const CandidateDetails = ({ candidate }) => {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
+          <FontAwesomeIcon icon={faUser} className="text-2xl text-primary-600 dark:text-primary-400" />
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {candidate.name}
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400">{candidate.position}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-gray-500 dark:text-gray-400">Email</label>
+          <p className="text-gray-900 dark:text-white">{candidate.email}</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-500 dark:text-gray-400">Phone</label>
+          <p className="text-gray-900 dark:text-white">{candidate.phone}</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-500 dark:text-gray-400">Experience</label>
+          <p className="text-gray-900 dark:text-white">{candidate.experience}</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-500 dark:text-gray-400">Source</label>
+          <p className="text-gray-900 dark:text-white">{candidate.source}</p>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          Interview History
+        </h4>
+        <div className="space-y-2">
+          {candidate.interviews.map((interview, index) => (
+            <div
+              key={index}
+              className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg flex justify-between items-center"
+            >
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  {interview.round}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {interview.date}
+                </p>
+              </div>
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                interview.status === 'Completed'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                  : 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
+              }`}>
+                {interview.status}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button variant="secondary">
+          <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
+          View Resume
+        </Button>
+        <Button variant="primary">
+          <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+          Schedule Interview
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const InterviewScheduler = ({ candidate }) => {
+  const [formData, setFormData] = useState({
+    type: '',
+    date: '',
+    time: '',
+    duration: '60',
+    interviewers: [],
+    notes: '',
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Handle interview scheduling
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Schedule Interview for {candidate.name}
+        </h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Position: {candidate.position}
+        </p>
+      </div>
+
+      <Select
+        label="Interview Type"
+        name="type"
+        value={formData.type}
+        onChange={handleInputChange}
+        required
+      >
+        <option value="">Select Type</option>
+        <option value="Technical">Technical</option>
+        <option value="Cultural">Cultural Fit</option>
+        <option value="System Design">System Design</option>
+        <option value="Behavioral">Behavioral</option>
+      </Select>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Date"
+          name="date"
+          type="date"
+          value={formData.date}
+          onChange={handleInputChange}
+          required
+        />
+        <Input
+          label="Time"
+          name="time"
+          type="time"
+          value={formData.time}
+          onChange={handleInputChange}
+          required
+        />
+      </div>
+
+      <Select
+        label="Duration"
+        name="duration"
+        value={formData.duration}
+        onChange={handleInputChange}
+        required
+      >
+        <option value="30">30 minutes</option>
+        <option value="60">1 hour</option>
+        <option value="90">1.5 hours</option>
+        <option value="120">2 hours</option>
+      </Select>
+
+      <Input
+        label="Notes"
+        name="notes"
+        type="textarea"
+        value={formData.notes}
+        onChange={handleInputChange}
+        placeholder="Any special instructions or topics to cover"
+        rows={3}
+      />
+
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="primary">
+          Schedule Interview
+        </Button>
+      </div>
+    </form>
+  );
+};
 
   const fetchRecruitmentData = async () => {
     setLoading(true);
@@ -366,4 +682,44 @@ const RecruitmentManagement = () => {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Recruitment Management
         </h2>
-        <div className="flex space-x-
+        <div className="flex space-x-4">
+          <Button
+            variant={currentView === 'overview' ? 'primary' : 'secondary'}
+            onClick={() => setCurrentView('overview')}
+          >
+            <FontAwesomeIcon icon={faChartBar} className="mr-2" />
+            Overview
+          </Button>
+          <Button
+            variant={currentView === 'jobs' ? 'primary' : 'secondary'}
+            onClick={() => setCurrentView('jobs')}
+          >
+            <FontAwesomeIcon icon={faBriefcase} className="mr-2" />
+            Job Postings
+          </Button>
+          <Button
+            variant={currentView === 'candidates' ? 'primary' : 'secondary'}
+            onClick={() => setCurrentView('candidates')}
+          >
+            <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+            Candidates
+          </Button>
+        </div>
+      </div>
+
+      {currentView === 'overview' && <RecruitmentOverview />}
+      {currentView === 'jobs' && <JobPostings />}
+      {currentView === 'candidates' && <Candidates />}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={getModalTitle()}
+      >
+        {renderModalContent()}
+      </Modal>
+    </div>
+  );
+};
+
+export default RecruitmentManagement;

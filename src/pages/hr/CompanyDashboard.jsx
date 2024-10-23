@@ -178,7 +178,7 @@ const CompanyDashboard = () => {
             Quick Actions
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link to="/hr/employees">
+            <Link to="/hr/employee-onboarding">
                 <Button variant="outline" className="w-full">
                 <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
                 Onboard Employee
@@ -190,14 +190,18 @@ const CompanyDashboard = () => {
                 Process Payroll
               </Button>
             </Link>
-            <Button variant="outline" className="w-full">
-              <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
-              Leave Requests
-            </Button>
-            <Button variant="outline" className="w-full">
-              <FontAwesomeIcon icon={faChartLine} className="mr-2" />
-              Performance Reviews
-            </Button>
+            <Link to="/hr/leave-requests">
+              <Button variant="outline" className="w-full">
+                <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+                Leave Requests
+              </Button>
+            </Link>
+            <Link to="/hr/performance-reviews">
+              <Button variant="outline" className="w-full">
+                <FontAwesomeIcon icon={faChartLine} className="mr-2" />
+                Performance Reviews
+              </Button>
+            </Link>
           </div>
         </Card>
       </div>

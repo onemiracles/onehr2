@@ -22,13 +22,17 @@ import EmployeeManagement from '../pages/hr/EmployeeManagement';
 import DepartmentManagement from '../pages/hr/DepartmentManagement';
 import PayrollManagement from '../pages/hr/PayrollManagement';
 import PayrollProcess from '../pages/hr/PayrollProcess';
-import RecruitmentPortal from '../pages/hr/RecruitmentPortal';
+import RecruitmentManagement from '../pages/hr/RecruitmentManagement';
+import LeaveRequests from '../pages/hr/LeaveRequests';
+import PerformanceReviews from '../pages/hr/PerformanceReviews';
+import EmployeeOnboarding from '../pages/hr/EmployeeOnboarding';
 
 // Manager pages
 import AttendanceTracker from '../pages/manager/AttendanceTracker';
 import PerformanceReview from '../pages/manager/PerformanceReview';
-import PositionManagement from '../pages/manager/PositionManagement.jsx';
-import MeetingSchedule from '../pages/manager/MeetingSchedule.jsx';
+import PositionManagement from '../pages/manager/PositionManagement';
+import MeetingSchedule from '../pages/manager/MeetingSchedule';
+import TaskManagement from '../pages/manager/TaskManagement';
 
 // Employee pages
 import RequestTimeOff from '../pages/employee/RequestTimeOff';
@@ -84,8 +88,11 @@ const AppRoutes = () => {
         <Route path="hr/employees" element={<PrivateRoute requiredPermission="manage_hr"><EmployeeManagement /></PrivateRoute>} />
         <Route path="hr/departments" element={<PrivateRoute requiredPermission="manage_hr"><DepartmentManagement /></PrivateRoute>} />
         <Route path="hr/payroll" element={<PrivateRoute requiredPermission="manage_hr"><PayrollManagement /></PrivateRoute>} />
-        <Route path="hr/recruitment" element={<PrivateRoute requiredPermission="manage_hr"><RecruitmentPortal /></PrivateRoute>} />
+        <Route path="hr/recruitment" element={<PrivateRoute requiredPermission="manage_hr"><RecruitmentManagement /></PrivateRoute>} />
         <Route path="hr/payroll-process" element={<PrivateRoute requiredPermission="manage_hr"><PayrollProcess /></PrivateRoute>} />
+        <Route path="hr/leave-requests" element={<PrivateRoute requiredPermission="manage_hr"><LeaveRequests /></PrivateRoute>} />
+        <Route path="hr/performance-reviews" element={<PrivateRoute requiredPermission="manage_hr"><PerformanceReviews /></PrivateRoute>} />
+        <Route path="hr/employee-onboarding" element={<PrivateRoute requiredPermission="manage_hr"><EmployeeOnboarding /></PrivateRoute>} />
 
         {/* Manager routes */}
         <Route path="manager" element={<PrivateRoute requiredPermission="manage_team"><Navigate to="attendance" replace /></PrivateRoute>} />
@@ -93,6 +100,7 @@ const AppRoutes = () => {
         <Route path="manager/performance" element={<PrivateRoute requiredPermission="manage_team"><PerformanceReview /></PrivateRoute>} />
         <Route path="manager/position" element={<PrivateRoute requiredPermission="manage_team"><PositionManagement /></PrivateRoute>} />
         <Route path="manager/meeting" element={<PrivateRoute requiredPermission="manage_team"><MeetingSchedule /></PrivateRoute>} />
+        <Route path="manager/tasks" element={<PrivateRoute requiredPermission="manage_team"><TaskManagement /></PrivateRoute>} />
 
         {/* Employee routes */}
         <Route path="employee" element={<Navigate to="tasks" replace />} />

@@ -24,8 +24,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Departments', icon: faComputer, path: '/hr/departments', permission: 'manage_hr' },
     { name: 'Payroll', icon: faMoneyBillWave, path: '/hr/payroll', permission: 'manage_hr' },
     { name: 'Recruitment', icon: faUserPlus, path: '/hr/recruitment', permission: 'manage_hr' },
+    { name: 'Performance Reviews', icon: faChartLine, path: '/hr/performance-reviews', permission: 'manage_hr' },
     { name: 'Performance', icon: faChartLine, path: '/manager/performance', permission: 'manage_team' },
     { name: 'Attendance', icon: faClock, path: '/manager/attendance', permission: 'manage_team' },
+    { name: 'Task Management', icon: faTasks, path: '/manager/tasks', permission: 'manage_team' },
     { name: 'Tasks', icon: faTasks, path: '/employee/tasks', permission: null },
     { name: 'Tenants', icon: faBuilding, path: '/admin/tenants', permission: 'manage_companies' },
   ];
