@@ -4,13 +4,14 @@ import { SuperAdminDashboard, CompanyAdminDashboard, CompanyManagerDashboard, Co
 import EmployeeDashboard from './employee/EmployeeDashboard';
 import ManagerDashboard from './manager/ManagerDashboard';
 import CompanyDashboard from './hr/CompanyDashboard';
+import AdminDashboard from './admin/AdminDashboard';
 
 const DashboardPage = () => {
   const { role } = useRole();
 
   switch (role) {
     case 'SUPER_ADMIN':
-      return <SuperAdminDashboard />;
+      return <AdminDashboard />;
     case 'COMPANY_ADMIN':
       return <CompanyDashboard />;
     case 'COMPANY_MANAGER':

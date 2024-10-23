@@ -99,10 +99,12 @@ const CompanyDashboard = () => {
           HR Dashboard
         </h1>
         <div className="flex space-x-4">
-          <Button variant="primary">
-            <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-            Post New Position
-          </Button>
+          <Link to="/hr/recruitment">
+            <Button variant="primary">
+              <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+              Post New Position
+            </Button>
+          </Link>
           <Button variant="secondary">
             <FontAwesomeIcon icon={faClipboardList} className="mr-2" />
             Generate Report

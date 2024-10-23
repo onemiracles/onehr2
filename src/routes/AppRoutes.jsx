@@ -16,6 +16,7 @@ import Profile from '../pages/Profile';
 
 // Admin pages
 import TenantManagement from '../pages/admin/TenantManagement';
+import FeatureManagement from '../pages/admin/FeatureManagement';
 
 // HR pages
 import EmployeeManagement from '../pages/hr/EmployeeManagement';
@@ -82,6 +83,7 @@ const AppRoutes = () => {
         {/* Admin routes */}
         <Route path="admin" element={<PrivateRoute requiredPermission="manage_companies"><Navigate to="tenants" replace /></PrivateRoute>} />
         <Route path="admin/tenants" element={<PrivateRoute requiredPermission="manage_companies"><TenantManagement /></PrivateRoute>} />
+        <Route path="admin/features" element={<PrivateRoute requiredPermission="manage_companies"><FeatureManagement /></PrivateRoute>} />
 
         {/* HR routes */}
         <Route path="hr" element={<PrivateRoute requiredPermission="manage_hr"><Navigate to="employees" replace /></PrivateRoute>} />
@@ -103,13 +105,13 @@ const AppRoutes = () => {
         <Route path="manager/tasks" element={<PrivateRoute requiredPermission="manage_team"><TaskManagement /></PrivateRoute>} />
 
         {/* Employee routes */}
-        <Route path="employee" element={<Navigate to="tasks" replace />} />
-        <Route path="employee/request-time-off" element={<RequestTimeOff />} />
-        <Route path="employee/view-payslips" element={<ViewPayslips />} />
-        <Route path="employee/tasks" element={<Tasks />} />
-        <Route path="employee/performance" element={<Performance />} />
-        <Route path="employee/achievements" element={<ViewAchievements />} />
-        <Route path="employee/request-feedback" element={<RequestFeedback />} />
+        <Route path="employee" element={<PrivateRoute requiredPermission="manage_work"><Navigate to="tasks" replace /></PrivateRoute>} />
+        <Route path="employee/request-time-off" element={<PrivateRoute requiredPermission="manage_work"><RequestTimeOff /></PrivateRoute>} />
+        <Route path="employee/view-payslips" element={<PrivateRoute requiredPermission="manage_work"><ViewPayslips /></PrivateRoute>} />
+        <Route path="employee/tasks" element={<PrivateRoute requiredPermission="manage_work"><Tasks /></PrivateRoute>} />
+        <Route path="employee/performance" element={<PrivateRoute requiredPermission="manage_work"><Performance /></PrivateRoute>} />
+        <Route path="employee/achievements" element={<PrivateRoute requiredPermission="manage_work"><ViewAchievements /></PrivateRoute>} />
+        <Route path="employee/request-feedback" element={<PrivateRoute requiredPermission="manage_work"><RequestFeedback /></PrivateRoute>} />
         {/* Catch-all redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

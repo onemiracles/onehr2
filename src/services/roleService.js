@@ -3,7 +3,7 @@ const roles = [
     { id: 1, name: 'SUPER_ADMIN', permissions: ['manage_companies', 'manage_admins', 'view_global_reports'] },
     { id: 2, name: 'COMPANY_ADMIN', permissions: ['manage_hr', 'manage_employees', 'manage_payroll', 'manage_attendance', 'manage_recruitment'] },
     { id: 3, name: 'COMPANY_MANAGER', permissions: ['view_department_employees', 'approve_leaves', 'manage_team', 'manage_timesheets', 'conduct_reviews'] },
-    { id: 4, name: 'COMPANY_EMPLOYEE', permissions: ['view_profile', 'submit_timesheet', 'request_leave', 'view_payslips'] },
+    { id: 4, name: 'COMPANY_EMPLOYEE', permissions: ['manage_work', 'view_profile', 'submit_timesheet', 'request_leave', 'view_payslips'] },
   ];
   
   const roleService = {

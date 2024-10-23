@@ -296,3 +296,90 @@ export const Tabs = React.forwardRef(({
       </div>
     );
   });
+
+  export const Switch = React.forwardRef(({
+    checked = false,
+    onChange,
+    disabled = false,
+    label,
+    size = 'default',
+    className,
+    ...props
+  }, ref) => {
+    const baseStyles = "relative inline-flex shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2";
+    const thumbStyles = "pointer-events-none inline-block rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out";
+    
+    const sizes = {
+      small: {
+        switch: "h-5 w-9",
+        thumb: "h-4 w-4",
+        translate: "translate-x-4",
+      },
+      default: {
+        switch: "h-6 w-11",
+        thumb: "h-5 w-5",
+        translate: "translate-x-5",
+      },
+      large: {
+        switch: "h-7 w-14",
+        thumb: "h-6 w-6",
+        translate: "translate-x-7",
+      },
+    };
+  
+    return (
+      <label className={cn(
+        "inline-flex items-center",
+        disabled && "cursor-not-allowed opacity-50",
+        className
+      )}>
+        <button
+          type="button"
+          role="switch"
+          ref={ref}
+          disabled={disabled}
+          checked={checked}
+          onChange={onChange}
+          className={cn(
+            baseStyles,
+            sizes[size].switch,
+            checked 
+              ? 'bg-primary-600 dark:bg-primary-400' 
+              : 'bg-gray-200 dark:bg-gray-700',
+            disabled && 'cursor-not-allowed opacity-50'
+          )}
+          onClick={() => !disabled && onChange?.(!checked)}
+          aria-checked={checked}
+          {...props}
+        >
+          <span
+            className={cn(
+              "absolute inset-0 flex items-center justify-start pl-1",
+              sizes[size].switch
+            )}
+            aria-hidden="true"
+          >
+            <span
+              className={cn(
+                thumbStyles,
+                sizes[size].thumb,
+                checked ? sizes[size].translate : "translate-x-0"
+              )}
+            />
+          </span>
+        </button>
+        {label && (
+          <span className={cn(
+            "ml-3 text-sm",
+            disabled 
+              ? "text-gray-400 dark:text-gray-600" 
+              : "text-gray-900 dark:text-gray-100"
+          )}>
+            {label}
+          </span>
+        )}
+      </label>
+    );
+  });
+  
+  Switch.displayName = 'Switch';

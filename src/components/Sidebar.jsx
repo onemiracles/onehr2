@@ -11,7 +11,8 @@ import {
   faClock, 
   faTasks, 
   faBuilding,
-  faComputer
+  faComputer,
+  faStar
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -28,8 +29,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Performance', icon: faChartLine, path: '/manager/performance', permission: 'manage_team' },
     { name: 'Attendance', icon: faClock, path: '/manager/attendance', permission: 'manage_team' },
     { name: 'Task Management', icon: faTasks, path: '/manager/tasks', permission: 'manage_team' },
-    { name: 'Tasks', icon: faTasks, path: '/employee/tasks', permission: null },
+    { name: 'Tasks', icon: faTasks, path: '/employee/tasks', permission: 'manage_work' },
     { name: 'Tenants', icon: faBuilding, path: '/admin/tenants', permission: 'manage_companies' },
+    { name: 'Features', icon: faStar, path: '/admin/features', permission: 'manage_companies' },
   ];
 
   return (

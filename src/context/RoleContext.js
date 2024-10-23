@@ -9,7 +9,7 @@ const rolePermissions = {
   SUPER_ADMIN: ['manage_companies', 'manage_admins', 'view_global_reports'],
   COMPANY_ADMIN: ['manage_hr', 'manage_employees', 'manage_payroll', 'manage_attendance', 'manage_recruitment'],
   COMPANY_MANAGER: ['view_department_employees', 'manage_team', 'approve_leaves', 'manage_timesheets', 'conduct_reviews'],
-  COMPANY_EMPLOYEE: ['view_profile', 'submit_timesheet', 'request_leave', 'view_payslips']
+  COMPANY_EMPLOYEE: ['manage_work', 'view_profile', 'submit_timesheet', 'request_leave', 'view_payslips']
 };
 
 export const RoleProvider = ({ children }) => {

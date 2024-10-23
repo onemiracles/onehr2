@@ -314,21 +314,21 @@ const EmployeeOnboarding = () => {
                 <div className="flex space-x-2">
                   <Button 
                     variant="secondary"
-                    size="sm"
+                    size="small"
                     onClick={() => setModalContent({ type: 'viewDocument', data: doc })}
                   >
                     <FontAwesomeIcon icon={faEye} />
                   </Button>
                   <Button 
                     variant="primary"
-                    size="sm"
+                    size="small"
                     // onClick={() => handleDocumentDownload(doc)}
                   >
                     <FontAwesomeIcon icon={faDownload} />
                   </Button>
                   <Button 
                     variant="danger"
-                    size="sm"
+                    size="small"
                     onClick={() => handleDocumentDelete(doc.id)}
                   >
                     <FontAwesomeIcon icon={faTrash} />
@@ -839,10 +839,10 @@ const EmployeeOnboarding = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <Button variant="secondary" size="sm">
+                    <Button variant="secondary" size="small">
                       <FontAwesomeIcon icon={faEye} />
                     </Button>
-                    <Button variant="primary" size="sm">
+                    <Button variant="primary" size="small">
                       <FontAwesomeIcon icon={faDownload} />
                     </Button>
                   </div>
