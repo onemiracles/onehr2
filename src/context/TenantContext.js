@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import tenantService from '../services/tenantService';
 import { useTenant } from '../hooks/useTenant';
 
