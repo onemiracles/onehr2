@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
-import { useAuth } from '../hooks/useAuth';
+import Cookies from "js-cookie";
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -39,7 +39,7 @@ class AuthService {
             }
           } catch (error) {
             // Token decode failed, remove invalid token
-            this.clearTokens();
+            
           }
         }
         return config;
@@ -82,13 +82,6 @@ class AuthService {
         password
       });
 
-      const { accessToken, refreshToken, user } = response.data;
-      
-      if (accessToken) {
-        this.setTokens(accessToken, refreshToken);
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -107,7 +100,7 @@ class AuthService {
 
   async refreshToken() {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      const refreshToken = Cookies.get('refreshToken');
       if (!refreshToken) {
         return null;
       }
@@ -119,29 +112,12 @@ class AuthService {
         }
       );
 
-      const { accessToken, newRefreshToken } = response.data;
-      if (accessToken) {
-        this.setTokens(accessToken, newRefreshToken);
-      }
+      const { accessToken } = response.data; 
 
       return accessToken;
     } catch (error) {
-      this.clearTokens();
       throw this.handleError(error);
     }
-  }
-
-  setTokens(accessToken, refreshToken) {
-    localStorage.setItem('authToken', accessToken);
-    if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken);
-    }
-  }
-
-  clearTokens() {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
   }
 
   async logout() {
@@ -154,8 +130,6 @@ class AuthService {
       }
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      this.clearTokens();
     }
   }
 
@@ -204,12 +178,7 @@ class AuthService {
   }
 
   getToken() {
-    return localStorage.getItem('authToken');
-  }
-
-  getCurrentUser() {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
+    return Cookies.get('authToken');
   }
 
   isAuthenticated() {
@@ -220,7 +189,6 @@ class AuthService {
       const decodedToken = jwtDecode(token);
       return decodedToken.exp * 1000 > Date.now();
     } catch (error) {
-      this.clearTokens();
       return false;
     }
   }
@@ -249,7 +217,6 @@ class AuthService {
       );
       
       const updatedUser = response.data;
-      localStorage.setItem('user', JSON.stringify(updatedUser));
       return updatedUser;
     } catch (error) {
       throw this.handleError(error);
@@ -288,7 +255,7 @@ class AuthService {
     if (error.response) {
       // Token expired or invalid
       if (error.response.status === 401) {
-        this.clearTokens();
+        
       }
       const message = error.response.data.message || 'An error occurred';
       return new Error(message);

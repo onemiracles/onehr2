@@ -13,14 +13,14 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.login(email, password);
       const userData = {
-        id: response.id,
-        email: response.email,
-        role: response.role,
-        tenantId: response.tenantId,
-        token: response.token,
+        id: response.user.id,
+        email: response.user.email,
+        role: response.user.role,
+        tenantId: response.user.tenantId,
+        token: response.accessToken,
       };
       setUser(userData);
-      setCookie('authToken', response.token, { path: '/', maxAge: 2592000 });
+      setCookie('authToken', response.accessToken, { path: '/', maxAge: 2592000 });
       return userData;
     } catch (error) {
       console.error('Login failed:', error);

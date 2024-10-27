@@ -11,7 +11,7 @@ const TenantManagement = () => {
   const [tenants, setTenants] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
-  const [form, setForm] = useState({ name: '', industry: '', employeeCount: '', subscriptionPlan: '' });
+  const [form, setForm] = useState({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
 
   useEffect(() => {
     fetchTenants();
@@ -32,7 +32,7 @@ const TenantManagement = () => {
       setForm(tenant);
       setEditingTenant(tenant);
     } else {
-      setForm({ name: '', industry: '', employeeCount: '', subscriptionPlan: '' });
+      setForm({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
       setEditingTenant(null);
     }
     setIsModalOpen(true);
@@ -41,18 +41,22 @@ const TenantManagement = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingTenant(null);
-    setForm({ name: '', industry: '', employeeCount: '', subscriptionPlan: '' });
+    setForm({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value, type } = e.target;
+    if (type === 'number') {
+      value = Number(value);
+    }
     setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    // e.preventDefault();
     try {
       if (editingTenant) {
+        delete form._count;
         await tenantService.updateTenant(editingTenant.id, form);
       } else {
         await tenantService.createTenant(form);

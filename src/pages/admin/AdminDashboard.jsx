@@ -18,12 +18,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useAuth } from '../../hooks/useAuth';
 import { useTenant } from '../../hooks/useTenant';
 import { Link } from 'react-router-dom';
+import tenantService from '../../services/tenantService';
 
 const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'];
 
 const AdminDashboard = () => {
   const { user } = useAuth();
-  const { subscriptionPlans } = useTenant();
+  const { subscriptionPlans, fetchTenantData } = useTenant();
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
   const [stats, setStats] = useState(null);
@@ -52,41 +53,50 @@ const AdminDashboard = () => {
 
   const fetchTenants = async () => {
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const mockTenants = [
-      {
-        id: 1,
-        name: 'TechCorp Inc',
-        plan: 'Pro',
-        status: 'active',
-        employeeCount: 150,
-        subscriptionStartDate: '2024-01-01',
-        subscriptionEndDate: '2024-12-31',
-        mrr: 3750,
-        usage: {
-          employees: 150,
-          storage: 35,
-          departments: 12
-        }
-      },
-      {
-        id: 2,
-        name: 'Healthcare Plus',
-        plan: 'Enterprise',
-        status: 'active',
-        employeeCount: 500,
-        subscriptionStartDate: '2024-02-01',
-        subscriptionEndDate: '2025-01-31',
-        mrr: 10000,
-        usage: {
-          employees: 500,
-          storage: 125,
-          departments: 25
-        }
-      },
-      // Add more mock tenants...
-    ];
-    setTenants(mockTenants);
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+    // const mockTenants = [
+    //   {
+    //     id: 1,
+    //     name: 'TechCorp Inc',
+    //     plan: 'Pro',
+    //     status: 'active',
+    //     employeeCount: 150,
+    //     subscriptionStartDate: '2024-01-01',
+    //     subscriptionEndDate: '2024-12-31',
+    //     mrr: 3750,
+    //     usage: {
+    //       employees: 150,
+    //       storage: 35,
+    //       departments: 12
+    //     }
+    //   },
+    //   {
+    //     id: 2,
+    //     name: 'Healthcare Plus',
+    //     plan: 'Enterprise',
+    //     status: 'active',
+    //     employeeCount: 500,
+    //     subscriptionStartDate: '2024-02-01',
+    //     subscriptionEndDate: '2025-01-31',
+    //     mrr: 10000,
+    //     usage: {
+    //       employees: 500,
+    //       storage: 125,
+    //       departments: 25
+    //     }
+    //   },
+    //   // Add more mock tenants...
+    // ];
+    // setTenants(mockTenants);
+
+    try {
+      const response = await tenantService.getTenants();
+      setTenants(response);
+      // setFilteredTenants(response);
+    } catch (error) {
+      console.error('Error fetching tenants:', error);
+      // Handle error (show notification)
+    }
   };
 
   const fetchSubscriptionStats = async () => {
@@ -397,12 +407,12 @@ const AdminDashboard = () => {
                       </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${tenant.plan === 'Free' ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100' :
-                          tenant.plan === 'Basic' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
-                          tenant.plan === 'Pro' ? 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100' :
+                        ${tenant.subscriptionPlan === 'Free' ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100' :
+                          tenant.subscriptionPlan === 'Basic' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
+                          tenant.subscriptionPlan === 'Pro' ? 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100' :
                           'bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100'}`}
                       >
-                        {tenant.plan}
+                        {tenant.subscriptionPlan}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -420,7 +430,7 @@ const AdminDashboard = () => {
                       ${tenant.mrr.toLocaleString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {tenant.subscriptionEndDate}
+                      {tenant.subscriptionEndDate ?? '_'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex space-x-2">
@@ -459,10 +469,13 @@ const AdminDashboard = () => {
           <div className="space-y-4">
             {tenants
               .filter(tenant => {
-                const daysUntilRenewal = Math.ceil(
-                  (new Date(tenant.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24)
-                );
-                return daysUntilRenewal <= 30;
+                if (tenant.subscriptionEndDate) {
+                  const daysUntilRenewal = Math.ceil(
+                    (new Date(tenant.subscriptionEndDate) - new Date()) / (1000 * 60 * 60 * 24)
+                  );
+                  return daysUntilRenewal <= 30;
+                }
+                return false;
               })
               .map(tenant => (
                 <div 

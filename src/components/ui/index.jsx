@@ -1,7 +1,13 @@
 import React, { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faSpinner,
+  faChevronLeft, 
+  faChevronRight,
+  faAngleDoubleLeft,
+  faAngleDoubleRight
+} from '@fortawesome/free-solid-svg-icons';
 
 export const Button = forwardRef(({ children, className, variant = 'primary', size = 'medium', ...props }, ref) => {
   const baseClasses = 'font-bold rounded focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200';
@@ -383,3 +389,215 @@ export const Tabs = React.forwardRef(({
   });
   
   Switch.displayName = 'Switch';
+
+  export const Pagination = React.forwardRef(({
+    total = 0,
+    pageSize = 10,
+    currentPage = 1,
+    onPageChange,
+    onPageSizeChange,
+    showPageSize = true,
+    showTotal = true,
+    disabled = false,
+    className,
+    pageSizeOptions = [10, 20, 50, 100],
+    siblingCount = 1,
+    ...props
+  }, ref) => {
+    const totalPages = Math.ceil(total / pageSize);
+    
+    // Calculate page range
+    const getPageRange = () => {
+      const range = [];
+      const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+      const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+  
+      const showLeftDots = leftSiblingIndex > 2;
+      const showRightDots = rightSiblingIndex < totalPages - 1;
+  
+      if (!showLeftDots && showRightDots) {
+        const leftItemCount = 3 + 2 * siblingCount;
+        for (let i = 1; i <= leftItemCount; i++) {
+          range.push(i);
+        }
+        range.push('...');
+        range.push(totalPages);
+      } else if (showLeftDots && !showRightDots) {
+        range.push(1);
+        range.push('...');
+        const rightItemCount = 3 + 2 * siblingCount;
+        for (let i = totalPages - rightItemCount + 1; i <= totalPages; i++) {
+          range.push(i);
+        }
+      } else if (showLeftDots && showRightDots) {
+        range.push(1);
+        range.push('...');
+        for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+          range.push(i);
+        }
+        range.push('...');
+        range.push(totalPages);
+      } else {
+        for (let i = 1; i <= totalPages; i++) {
+          range.push(i);
+        }
+      }
+  
+      return range;
+    };
+  
+    const handlePageChange = (page) => {
+      if (disabled || page === currentPage) return;
+      if (page >= 1 && page <= totalPages) {
+        onPageChange?.(page);
+      }
+    };
+  
+    const handlePageSizeChange = (value) => {
+      if (disabled) return;
+      const newPageSize = Number(value);
+      onPageSizeChange?.(newPageSize);
+      // Adjust current page if necessary
+      const newTotalPages = Math.ceil(total / newPageSize);
+      if (currentPage > newTotalPages) {
+        onPageChange?.(newTotalPages);
+      }
+    };
+  
+    const PageButton = ({ page, active = false }) => (
+      <button
+        type="button"
+        onClick={() => handlePageChange(page)}
+        disabled={disabled}
+        className={cn(
+          "inline-flex items-center justify-center w-8 h-8 rounded-md text-sm font-medium transition-colors",
+          "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2",
+          active
+            ? "bg-primary-600 text-white dark:bg-primary-500"
+            : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700",
+          disabled && "opacity-50 cursor-not-allowed",
+        )}
+      >
+        {page}
+      </button>
+    );
+  
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "flex flex-col sm:flex-row items-center justify-between gap-4",
+          className
+        )}
+        {...props}
+      >
+        <div className="flex items-center gap-2">
+          {showTotal && (
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Total {total} items
+            </span>
+          )}
+          
+          {showPageSize && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Show
+              </span>
+              <Select
+                value={pageSize.toString()}
+                onChange={(e) => handlePageSizeChange(e.target.value)}
+                disabled={disabled}
+                className="w-20"
+              >
+                {pageSizeOptions.map(size => (
+                  <option key={size} value={size.toString()}>
+                    {size}
+                  </option>
+                ))}
+              </Select>
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                per page
+              </span>
+            </div>
+          )}
+        </div>
+  
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handlePageChange(1)}
+            disabled={disabled || currentPage === 1}
+            className={cn(
+              "p-1 rounded-md text-gray-500 dark:text-gray-400",
+              "hover:bg-gray-100 dark:hover:bg-gray-700",
+              "focus:outline-none focus:ring-2 focus:ring-primary-500",
+              (disabled || currentPage === 1) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <FontAwesomeIcon icon={faChevronLeft} className="h-5 w-5" />
+          </button>
+  
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={disabled || currentPage === 1}
+            className={cn(
+              "p-1 rounded-md text-gray-500 dark:text-gray-400",
+              "hover:bg-gray-100 dark:hover:bg-gray-700",
+              "focus:outline-none focus:ring-2 focus:ring-primary-500",
+              (disabled || currentPage === 1) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <FontAwesomeIcon icon={faAngleDoubleLeft} className="h-5 w-5" />
+          </button>
+  
+          <div className="flex items-center gap-1">
+            {getPageRange().map((page, index) => (
+              <React.Fragment key={index}>
+                {page === '...' ? (
+                  <span className="px-2 text-gray-500 dark:text-gray-400">
+                    ...
+                  </span>
+                ) : (
+                  <PageButton 
+                    page={page} 
+                    active={page === currentPage}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+  
+          <button
+            type="button"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={disabled || currentPage === totalPages}
+            className={cn(
+              "p-1 rounded-md text-gray-500 dark:text-gray-400",
+              "hover:bg-gray-100 dark:hover:bg-gray-700",
+              "focus:outline-none focus:ring-2 focus:ring-primary-500",
+              (disabled || currentPage === totalPages) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <FontAwesomeIcon icon={faChevronRight} className="h-5 w-5" />
+          </button>
+  
+          <button
+            type="button"
+            onClick={() => handlePageChange(totalPages)}
+            disabled={disabled || currentPage === totalPages}
+            className={cn(
+              "p-1 rounded-md text-gray-500 dark:text-gray-400",
+              "hover:bg-gray-100 dark:hover:bg-gray-700",
+              "focus:outline-none focus:ring-2 focus:ring-primary-500",
+              (disabled || currentPage === totalPages) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            <FontAwesomeIcon icon={faAngleDoubleRight} className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  });
+  
+  Pagination.displayName = 'Pagination';
