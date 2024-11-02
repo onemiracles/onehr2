@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, Select, Spinner, Switch } from '../../components/ui';
+import { Card, Button, Input, Select, Loading, Switch } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faLayerGroup,
@@ -242,9 +242,7 @@ const FeatureManagement = () => {
 
   if (loading && features.length === 0) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner className="h-8 w-8 text-primary-600" />
-      </div>
+      <Loading />
     );
   }
 

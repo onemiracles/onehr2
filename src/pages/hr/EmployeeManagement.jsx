@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Card, Button, Input, Select, Spinner, Modal, Table, Tabs, TabPanel } from '../../components/ui';
+import { Card, Button, Input, Select, Loading, Modal, Table, Tabs, TabPanel } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUserPlus,
@@ -223,11 +223,7 @@ const EmployeeManagement = () => {
   );
 
   if (loading && employees.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="large" color="primary" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

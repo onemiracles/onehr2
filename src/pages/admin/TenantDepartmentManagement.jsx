@@ -2,23 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRole } from '../../hooks/useRole';
 import DepartmentManagement from '../../components/DepartmentManagement';
 import tenantService from '../../services/tenantService';
-import departmentService from '../../services/departmentService';
-import employeeService from '../../services/employeeService';
 import { Card, Button, Input, Select, Table, Modal, Spinner, Pagination } from '../../components/ui';
-import { Form } from '../../components/ui/Form';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faBuilding,
-  faPlus,
-  faEdit,
-  faTrash,
-  faSearch,
-  faSitemap,
-  faUserTie,
-  faChartPie,
-  faUsers
-} from '@fortawesome/free-solid-svg-icons';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 const TenantDepartmentManagement = () => {
   const { hasPermission } = useRole();

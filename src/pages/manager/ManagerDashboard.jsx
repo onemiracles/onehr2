@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Card, Button, Spinner } from '../../components/ui';
+import { Card, Button, Loading } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, 
@@ -53,11 +53,7 @@ const ManagerDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="large" color="primary" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

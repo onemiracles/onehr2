@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Card, Button, Spinner, Progress } from '../../components/ui';
+import { Card, Button, Loading, Progress } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChartLine, faBullseye, faComments, faTrophy } from '@fortawesome/free-solid-svg-icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -69,11 +69,7 @@ const Performance = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="large" color="primary" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

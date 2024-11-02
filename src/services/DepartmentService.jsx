@@ -5,11 +5,12 @@ import { config } from '@fortawesome/fontawesome-svg-core';
 const API_URL = process.env.REACT_APP_API_URL;
 
 class DepartmentService {
-  constructor() {
+  constructor(tenantId) {
     this.api = axios.create({
       baseURL: `${API_URL}/departments`,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-tenant-id': `${tenantId}`
       }
     });
 
@@ -28,11 +29,7 @@ class DepartmentService {
 
   async getDepartments(tenantId) {
     try {
-      const response = await this.api.get('/', {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.get('/');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -48,13 +45,18 @@ class DepartmentService {
     }
   }
 
+  async getDepartmentStats(id) {
+    try {
+      const response = await this.api.get(`/stats`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async createDepartment(tenantId, data) {
     try {
-      const response = await this.api.post('/', data, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.post('/', data);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -63,11 +65,7 @@ class DepartmentService {
 
   async updateDepartment(tenantId, id, updateData) {
     try {
-      const response = await this.api.put(`/${id}`, updateData, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.put(`/${id}`, updateData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -76,11 +74,7 @@ class DepartmentService {
 
   async deleteDepartment(tenantId, id) {
     try {
-      const response = await this.api.delete(`/${id}`, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.delete(`/${id}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -96,5 +90,4 @@ class DepartmentService {
   }
 }
 
-const departmentService = new DepartmentService();
-export default departmentService;
+export default DepartmentService;

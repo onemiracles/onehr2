@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { Card, Button, Spinner, Modal } from '../../components/ui';
+import { Card, Button, Loading, Modal } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrophy, faMedal, faCertificate, faAward, faSearch } from '@fortawesome/free-solid-svg-icons';
 
@@ -64,11 +64,7 @@ const ViewAchievements = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="large" color="primary" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

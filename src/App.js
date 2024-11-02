@@ -4,7 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { RoleProvider } from './context/RoleContext';
 import { TenantProvider } from './context/TenantContext';
 import AppRoutes from './routes/AppRoutes';
-import { ModalProvider } from './components/ModalProvider';
+import ModalProvider from './components/modal/ModalProvider';
 
 function App() {
   return (

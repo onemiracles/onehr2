@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useRole } from '../hooks/useRole';
-import { Card, Spinner } from './ui';
+import { Card, Loading } from './ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faClipboardList, faDollarSign, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 
@@ -30,11 +30,7 @@ const Dashboard = ({ children }) => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-full">
-        <Spinner size="large" color="primary" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

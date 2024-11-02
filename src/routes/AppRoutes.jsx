@@ -19,6 +19,7 @@ import TenantManagement from '../pages/admin/TenantManagement';
 import FeatureManagement from '../pages/admin/FeatureManagement';
 import TenantEmployeeManagement from '../pages/admin/TenantEmployeeManagement';
 import TenantDepartmentManagement from '../pages/admin/TenantDepartmentManagement';
+import UserManagement from '../pages/admin/UserManagement';
 
 // HR pages
 import EmployeeManagement from '../pages/hr/EmployeeManagement';
@@ -88,6 +89,7 @@ const AppRoutes = () => {
         <Route path="admin/features" element={<PrivateRoute requiredPermission="manage_companies"><FeatureManagement /></PrivateRoute>} />
         <Route path="admin/employees" element={<PrivateRoute requiredPermission="manage_companies"><TenantEmployeeManagement /></PrivateRoute>} />
         <Route path="admin/departments" element={<PrivateRoute requiredPermission="manage_companies"><TenantDepartmentManagement /></PrivateRoute>} />
+        <Route path="admin/users" element={<PrivateRoute requiredPermission="manage_companies"><UserManagement /></PrivateRoute>} />
 
         {/* HR routes */}
         <Route path="hr" element={<PrivateRoute requiredPermission="manage_hr"><Navigate to="employees" replace /></PrivateRoute>} />

@@ -20,7 +20,6 @@ const TenantEmployeeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState(null);
   const [departments, setDepartments] = useState(null);
-  const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEmployee, setCurrentEmployee] = useState(null);
@@ -41,22 +40,9 @@ const TenantEmployeeManagement = () => {
   });
 
   useEffect(() => {
-    fetchTenants();
-  }, []);
-
-  useEffect(() => {
     fetchEmployees();
     fetchDepartments();
   }, [selectedTenant, currentPage, searchTerm, filterRole]);
-
-  const fetchTenants = async () => {
-    try {
-      const response = await tenantService.getTenants();
-      setTenants(response);
-    } catch (error) {
-      console.error('Failed to fetch tenants:', error);
-    }
-  };
 
   const fetchDepartments = async () => {
     if (selectedTenant) {

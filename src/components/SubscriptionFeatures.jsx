@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Spinner } from '@/components/ui/';
+import { Card, Button, Loading } from '../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faTimes, faInfoCircle, faCrown, faChartLine, faUsers, faFileAlt, faCog } from '@fortawesome/free-solid-svg-icons';
 
@@ -100,11 +100,7 @@ const SubscriptionFeatures = () => {
   ];
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner className="h-8 w-8 text-primary-600" />
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

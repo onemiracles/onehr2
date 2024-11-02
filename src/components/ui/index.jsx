@@ -2,7 +2,6 @@ import React, { forwardRef } from 'react';
 import { cn } from '../../utils/cn';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSpinner,
   faChevronLeft, 
   faChevronRight,
   faAngleDoubleLeft,
@@ -93,54 +92,6 @@ export const Card = forwardRef(({ children, className, ...props }, ref) => {
       {...props}
     >
       {children}
-    </div>
-  );
-});
-
-export const Spinner = ({ size = 'medium', className }) => {
-  const sizeClasses = {
-    small: 'w-4 h-4',
-    medium: 'w-8 h-8',
-    large: 'w-12 h-12',
-  };
-
-  return (
-    <FontAwesomeIcon
-      icon={faSpinner}
-      className={cn("animate-spin text-primary-600 dark:text-primary-400", sizeClasses[size], className)}
-    />
-  );
-};
-
-export const Table = forwardRef(({ headers, data, className, ...props }, ref) => {
-  return (
-    <div className="overflow-x-auto">
-      <table ref={ref} className={cn("min-w-full divide-y divide-gray-200 dark:divide-gray-700", className)} {...props}>
-        <thead className="bg-gray-50 dark:bg-gray-700">
-          <tr>
-            {headers.map((header, index) => (
-              <th
-                key={index}
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {data.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, cellIndex) => (
-                <td key={cellIndex} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 });
@@ -534,7 +485,7 @@ export const Tabs = React.forwardRef(({
               (disabled || currentPage === 1) && "opacity-50 cursor-not-allowed"
             )}
           >
-            <FontAwesomeIcon icon={faChevronLeft} className="h-5 w-5" />
+            <FontAwesomeIcon icon={faAngleDoubleLeft} className="h-5 w-5" />
           </button>
   
           <button
@@ -548,7 +499,7 @@ export const Tabs = React.forwardRef(({
               (disabled || currentPage === 1) && "opacity-50 cursor-not-allowed"
             )}
           >
-            <FontAwesomeIcon icon={faAngleDoubleLeft} className="h-5 w-5" />
+            <FontAwesomeIcon icon={faChevronLeft} className="h-5 w-5" />
           </button>
   
           <div className="flex items-center gap-1">
@@ -601,3 +552,8 @@ export const Tabs = React.forwardRef(({
   });
   
   Pagination.displayName = 'Pagination';
+
+  
+export { Loading, Spinner } from './Loading';
+export { Form } from './Form';
+export { Table } from './Table';
