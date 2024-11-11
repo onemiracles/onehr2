@@ -39,6 +39,26 @@ const TenantManagement = () => {
     });
   };
 
+  const handleCloseModal = () => {
+    hideModal();
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this tenant?')) {
+      try {
+        await tenantService.deleteTenant(id);
+        fetchTenants();
+      } catch (error) {
+        console.error('Failed to delete tenant:', error);
+        // Handle error (e.g., show error message to user)
+      }
+    }
+  };
+
+  if (!hasPermission('manage_companies')) {
+    return <div>You do not have permission to access this page.</div>;
+  }
+
   const ModalContent = ({initalState, data = null}) => {
     const [state, setState] = useState(initalState);
 
@@ -108,26 +128,6 @@ const TenantManagement = () => {
       </Button>
     </Form>);
   };
-
-  const handleCloseModal = () => {
-    hideModal();
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this tenant?')) {
-      try {
-        await tenantService.deleteTenant(id);
-        fetchTenants();
-      } catch (error) {
-        console.error('Failed to delete tenant:', error);
-        // Handle error (e.g., show error message to user)
-      }
-    }
-  };
-
-  if (!hasPermission('manage_companies')) {
-    return <div>You do not have permission to access this page.</div>;
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">

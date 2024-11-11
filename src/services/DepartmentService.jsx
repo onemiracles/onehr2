@@ -27,9 +27,11 @@ class DepartmentService {
     );
   }
 
-  async getDepartments(tenantId) {
+  async getDepartments(params = {}) {
     try {
-      const response = await this.api.get('/');
+      const response = await this.api.get('/', {
+        params: params
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -45,7 +47,7 @@ class DepartmentService {
     }
   }
 
-  async getDepartmentStats(id) {
+  async getDepartmentStats() {
     try {
       const response = await this.api.get(`/stats`);
       return response.data;
@@ -54,7 +56,7 @@ class DepartmentService {
     }
   }
 
-  async createDepartment(tenantId, data) {
+  async createDepartment(data) {
     try {
       const response = await this.api.post('/', data);
       return response.data;
@@ -63,7 +65,7 @@ class DepartmentService {
     }
   }
 
-  async updateDepartment(tenantId, id, updateData) {
+  async updateDepartment(id, updateData) {
     try {
       const response = await this.api.put(`/${id}`, updateData);
       return response.data;
@@ -72,7 +74,7 @@ class DepartmentService {
     }
   }
 
-  async deleteDepartment(tenantId, id) {
+  async deleteDepartment(id) {
     try {
       const response = await this.api.delete(`/${id}`);
       return response.data;

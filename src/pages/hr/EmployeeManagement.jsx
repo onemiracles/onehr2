@@ -176,10 +176,6 @@ const EmployeeManagement = () => {
 
   const handleInputChange = (e) => {
     let { name, value, type } = e.target;
-    // if (name === 'startDate') {
-    //   const date = new Date(value);
-    //   value = date.toISOString();
-    // }
     if (type === 'number') {
       value = Number(value);
     }

@@ -26,6 +26,15 @@ class UserService {
     );
   }
 
+  async getStats() {
+    try {
+      const response = await this.api.get('/stats');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getUsers(params) {
     try {
       const response = await this.api.get('/', {

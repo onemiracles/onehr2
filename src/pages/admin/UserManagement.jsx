@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRole } from '../../hooks/useRole';
 import { Card, Button, Input, Select, Table, Form, Loading, Pagination } from '../../components/ui';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { formatDate } from '../../utils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faUserPlus,
@@ -21,16 +22,12 @@ import { useModal } from '../../components/modal';
 const UserManagement = () => {
   const { hasPermission } = useRole();
   const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState([]);
-  const [roleDistribution, setRoleDistribution] = useState([]);
+  const [users, setUsers] = useState(null);
+  const [stats, userStats] = useState({});
   const [tenants, setTenants] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState(false);
-  const [isShowEditModal, setIsEditShowModal] = useState(false);
-  const { showModal, hideModal } = useModal();
+  const {showModal, hideModal} = useModal();
 
   // Chart colors for department statistics
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -43,49 +40,7 @@ const UserManagement = () => {
     status: ''
   });
 
-  // Form state
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    role: '',
-    tenantId: '',
-    status: 'active',
-    position: '',
-    department: ''
-  });
-
-  // Password reset form
-  const [passwordForm, setPasswordForm] = useState({
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  useEffect(() => {
-    fetchTenants();
-  }, []);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [currentPage, filters]);
-
-  useEffect(() => {
-    if (isShowEditModal && formData && currentUser) {
-        handleShowModal('edit');
-    }
-  }, [isShowEditModal, formData, currentUser]);
-
-  const fetchTenants = async () => {
-    try {
-      const response = await tenantService.getTenants();
-      setTenants(response);
-    } catch (error) {
-      console.error('Failed to fetch tenants:', error);
-    }
-  };
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       // Build query params
@@ -101,58 +56,32 @@ const UserManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, filters]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    const fetchTenants = async () => {
+      try {
+        const response = await tenantService.getTenants();
+        setTenants(response);
+      } catch (error) {
+        console.error('Failed to fetch tenants:', error);
+      }
+    };
+    const fetchUserStats = async () => {
+      const response = await userService.getStats()
+      userStats(response);
+    }
+    fetchTenants();
+    fetchUserStats();
+  }, []);
 
   const handleFilterChange = (name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }));
     setCurrentPage(1);
-  };
-
-  const handleAddUser = () => {
-    setCurrentUser(null);
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      role: '',
-      tenantId: '',
-      status: 'active',
-      position: '',
-      department: ''
-    });
-    handleShowModal('edit');
-  };
-
-  const handleEditUser = (user) => {
-    setCurrentUser(user);
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      tenantId: user.tenantId,
-      status: user.status,
-      position: user.position,
-      department: user.department
-    });
-    setIsEditShowModal(true);
-  };
-
-  const handleSubmit = async (e) => {
-    // e.preventDefault();
-    try {
-        if (currentUser) {
-          await userService.updateUser(currentUser.id, formData);
-        } else {
-          await userService.creatUser(formData);
-        }
-        fetchUsers();
-        handleHideModal();
-    } catch (error) {
-        console.error('Failed to save user:', error);
-    }
   };
 
   const handleDeleteUser = async (userId) => {
@@ -165,32 +94,6 @@ const UserManagement = () => {
       fetchUsers();
     } catch (error) {
       console.error('Failed to delete user:', error);
-    }
-  };
-
-  const handleResetPassword = async (userId) => {
-    setCurrentUser(users.find(u => u.id === userId));
-    setPasswordForm({ newPassword: '', confirmPassword: '' });
-    setIsResetPasswordModalOpen(true);
-  };
-
-  const handlePasswordResetSubmit = async (e) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('Passwords do not match');
-      return;
-    }
-
-    try {
-      // Replace with actual API call
-      await fetch(`/api/admin/users/${currentUser.id}/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: passwordForm.newPassword })
-      });
-      setIsResetPasswordModalOpen(false);
-    } catch (error) {
-      console.error('Failed to reset password:', error);
     }
   };
 
@@ -210,128 +113,43 @@ const UserManagement = () => {
     hideModal();
   }
 
-  const handleShowModal = (type) => {
-    setIsEditShowModal(false);
-    if (type === 'edit') {
-        showModal(
-            <Form onSubmit={handleSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="First Name"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  required
-                />
-                <Input
-                  label="Last Name"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  required
-                />
-              </div>
-        
-              <Input
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
-              />
-        
-              <Input
-                label="Phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              />
-        
-              <Select
-                label="Role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                required
-                options={[
-                  { value: 'SUPER_ADMIN', label: 'Super Admin' },
-                  { value: 'COMPANY_ADMIN', label: 'Company Admin' },
-                  { value: 'COMPANY_MANAGER', label: 'Company Manager' },
-                  { value: 'COMPANY_EMPLOYEE', label: 'Company Employee' }
-                ]}
-              />
-        
-              <Select
-                label="Tenant"
-                value={formData.tenantId}
-                onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
-                required={formData.role !== 'SUPER_ADMIN'}
-                options={[
-                  { value: '', label: 'Select Tenant' },
-                  ...tenants.map(tenant => ({
-                    value: tenant.id,
-                    label: tenant.name
-                  }))
-                ]}
-              />
-        
-              <Input
-                label="Position"
-                value={formData.position}
-                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-              />
-        
-              <Input
-                label="Department"
-                value={formData.department}
-                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              />
-        
-              <Select
-                label="Status"
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                required
-                options={[
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'suspended', label: 'Suspended' }
-                ]}
-              />
-        
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="secondary" onClick={() => handleHideModal()}>
-                  Cancel
-                </Button>
-                <Button variant="primary" type="submit">
-                  {currentUser ? 'Update User' : 'Create User'}
-                </Button>
-              </div>
-            </Form>,
-            {
-                title: currentUser ? "Edit User" : "Add New User"
-            });
+  const handleShowModal = (type, data = null) => {
+    if (type === 'user') {
+      let state = data ? {
+        firstName: data.firstName ?? '',
+        lastName: data.lastName ?? '',
+        email: data.email ?? '',
+        phone: data.phone ?? '',
+        role: data.role ?? '',
+        tenantId: data.tenantId ?? '',
+        status: data.status ?? '',
+        position: data.position ?? '',
+        startDate: formatDate(data.startDate, 'calendar') ?? '',
+        department: data.departmentId ?? ''
+      } : {
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        role: '',
+        tenantId: '',
+        status: 'active',
+        position: '',
+        startDate: '',
+        department: ''
+      }; 
+      showModal(<UserModalContent initalState={state} data={data} />,
+        {
+            title: data ? "Edit User" : "Add New User"
+        }
+      );
+
     } else if (type === 'password') {
-        showModal(<Form onSubmit={handlePasswordResetSubmit}>
-            <Input
-              label="New Password"
-              type="password"
-              value={passwordForm.newPassword}
-              onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-              required
-            />
-            <Input
-              label="Confirm Password"
-              type="password"
-              value={passwordForm.confirmPassword}
-              onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-              required
-            />
-            <div className="flex justify-end space-x-2 mt-6">
-              <Button variant="secondary" onClick={() => handleHideModal()}>
-                Cancel
-              </Button>
-              <Button variant="primary" type="submit">
-                Reset Password
-              </Button>
-            </div>
-          </Form>);
+      showModal(<PasswordModalContent data={data.id}/>,
+      {
+          title: `Reset user "${data.firstName} ${data.lastName}" password`
+      }
+    );
     }
 
   }
@@ -339,6 +157,184 @@ const UserManagement = () => {
   if (!hasPermission('manage_companies')) {
     return <div>You do not have permission to access this page.</div>;
   }
+
+  const UserModalContent = ({initalState, data = null}) => {
+    const [state, setState] = useState(initalState);
+    const [departments, setDepartments] = useState([]);
+
+    useEffect(() => {
+      const tenant = tenants.find((e) => e.id === state.tenantId);
+      setDepartments(tenant.departments);
+    }, [state.tenantId])
+
+    const handleSubmit = async (e) => {
+      // e.preventDefault();
+      try {
+          if (data) {
+            await userService.updateUser(data.id, state);
+          } else {
+            await userService.creatUser(state);
+          }
+          fetchUsers();
+          handleHideModal();
+      } catch (error) {
+          console.error('Failed to save user:', error);
+      }
+    };
+
+    return(<Form onSubmit={handleSubmit}>
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="First Name"
+          value={state.firstName}
+          onChange={(e) => setState({ ...state, firstName: e.target.value })}
+          required
+        />
+        <Input
+          label="Last Name"
+          value={state.lastName}
+          onChange={(e) => setState({ ...state, lastName: e.target.value })}
+          required
+        />
+      </div>
+
+      <Input
+        label="Email"
+        type="email"
+        value={state.email}
+        onChange={(e) => setState({ ...state, email: e.target.value })}
+        required
+      />
+
+      <Input
+        label="Phone"
+        value={state.phone}
+        onChange={(e) => setState({ ...state, phone: e.target.value })}
+      />
+
+      <Select
+        label="Role"
+        value={state.role}
+        onChange={(e) => setState({ ...state, role: e.target.value })}
+        required
+        options={[
+          { value: 'SUPER_ADMIN', label: 'Super Admin' },
+          { value: 'COMPANY_ADMIN', label: 'Company Admin' },
+          { value: 'COMPANY_MANAGER', label: 'Company Manager' },
+          { value: 'COMPANY_EMPLOYEE', label: 'Company Employee' }
+        ]}
+      />
+
+      <Select
+        label="Tenant"
+        value={state.tenantId}
+        onChange={(e) => setState({ ...state, tenantId: e.target.value })}
+        required={state.role !== 'SUPER_ADMIN'}
+        options={[
+          { value: '', label: 'Select Tenant' },
+          ...tenants.map(tenant => ({
+            value: tenant.id,
+            label: tenant.name
+          }))
+        ]}
+      />
+
+      <Select
+        label="Department"
+        value={state.department}
+        onChange={(e) => setState({ ...state, department: e.target.value })}
+        required
+        options={[
+          { value: '', label: 'No Department' },
+          ...departments.map(dept => ({ value: dept.id, label: dept.name }))
+        ]}
+      />
+
+      <Input
+        label="Position"
+        value={state.position}
+        onChange={(e) => setState({ ...state, position: e.target.value })}
+      />
+      
+      <Input
+        label="Joining Date"
+        name="startDate"
+        type="date"
+        value={state.startDate}
+        onChange={(e) => setState({ ...state, startDate: e.target.value })}
+      />
+
+      <Select
+        label="Status"
+        value={state.status}
+        onChange={(e) => setState({ ...state, status: e.target.value })}
+        required
+        options={[
+          { value: 'active', label: 'Active' },
+          { value: 'inactive', label: 'Inactive' },
+          { value: 'suspended', label: 'Suspended' }
+        ]}
+      />
+
+      <div className="flex justify-end space-x-2 mt-6">
+        <Button variant="secondary" onClick={() => handleHideModal()}>
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit">
+          {data ? 'Update User' : 'Create User'}
+        </Button>
+      </div>
+    </Form>);
+  };
+
+  const PasswordModalContent = ({data}) => {
+    const [state, setState] = useState({newPassword: '', confirmPassword: ''});
+    
+    const handlePasswordResetSubmit = async (e) => {
+      e.preventDefault();
+      if (state.newPassword !== state.confirmPassword) {
+        alert('Passwords do not match');
+        return;
+      }
+
+      try {
+        // Replace with actual API call
+        await fetch(`/api/admin/users/${data}/reset-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: state.newPassword })
+        });
+        handleHideModal();
+      } catch (error) {
+        console.error('Failed to reset password:', error);
+      }
+    };
+
+    return (<Form onSubmit={handlePasswordResetSubmit}>
+      <Input
+        label="New Password"
+        type="password"
+        value={state.newPassword}
+        onChange={(e) => setState({ ...state, newPassword: e.target.value })}
+        required
+      />
+      <Input
+        label="Confirm Password"
+        type="password"
+        value={state.confirmPassword}
+        onChange={(e) => setState({ ...state, confirmPassword: e.target.value })}
+        required
+      />
+      <div className="flex justify-end space-x-2 mt-6">
+        <Button variant="secondary" onClick={() => handleHideModal()}>
+          Cancel
+        </Button>
+        <Button variant="primary" type="submit">
+          Reset Password
+        </Button>
+      </div>
+    </Form>);
+  };
 
   return (
     <div className="space-y-6">
@@ -394,7 +390,7 @@ const UserManagement = () => {
         </div>
 
         <div className="flex justify-end mb-4">
-          <Button variant="primary" onClick={handleAddUser}>
+          <Button variant="primary" onClick={() => handleShowModal('user')}>
             <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
             Add User
           </Button>
@@ -433,7 +429,7 @@ const UserManagement = () => {
                 <div className="flex space-x-2">
                   <Button
                     variant="secondary"
-                    onClick={() => handleEditUser(user)}
+                    onClick={() => handleShowModal('user', user)}
                     title="Edit User"
                   >
                     <FontAwesomeIcon icon={faEdit} />
@@ -447,14 +443,14 @@ const UserManagement = () => {
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => handleResetPassword(user.id)}
+                    onClick={() => handleShowModal('password', user)}
                     title="Reset Password"
                   >
                     <FontAwesomeIcon icon={faKey} />
                   </Button>
                   <Button
-                    variant="secondary"
-                    onClick={() => handleDeleteUser(user.id)}
+                    variant="danger"
+                    onClick={() => handleDeleteUser('password', user.id)}
                     title="Delete User"
                   >
                     <FontAwesomeIcon icon={faTrash} />
@@ -524,14 +520,14 @@ const UserManagement = () => {
           </div>
         </div>
 
-        {/* Role Distribution Chart */}
-        <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Role Distribution</h3>
+        {/* Department Distribution Chart */}
+        {stats?.departmentDistribution && <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Department Distribution</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={roleDistribution}
+                  data={stats.departmentDistribution}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -539,7 +535,7 @@ const UserManagement = () => {
                   outerRadius={80}
                   fill="#8884d8"
                 >
-                  {roleDistribution.map((entry, index) => (
+                  {stats.departmentDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -548,7 +544,7 @@ const UserManagement = () => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </div>}
       </Card>
     </div>
   );

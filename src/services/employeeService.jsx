@@ -27,9 +27,11 @@ class EmployeeService {
     );
   }
 
-  async getEmployees() {
+  async getEmployees(params = {}) {
     try {
-      const response = await this.api.get('/');
+      const response = await this.api.get('/', {
+        params: params
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
