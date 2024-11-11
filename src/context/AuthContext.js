@@ -21,6 +21,9 @@ export const AuthProvider = ({ children }) => {
       };
       setUser(userData);
       setCookie('authToken', response.accessToken, { path: '/', maxAge: 2592000 });
+      setCookie('userId', response.user.id, { path: '/', maxAge: 2592000 });
+      setCookie('userName', response.user.firstName, { path: '/', maxAge: 2592000 });
+      setCookie('tenantId', response.tenantId, { path: '/', maxAge: 2592000 });
       return userData;
     } catch (error) {
       console.error('Login failed:', error);

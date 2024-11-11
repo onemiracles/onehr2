@@ -5,11 +5,12 @@ import { config } from '@fortawesome/fontawesome-svg-core';
 const API_URL = process.env.REACT_APP_API_URL;
 
 class EmployeeService {
-  constructor() {
+  constructor(tenantId) {
     this.api = axios.create({
       baseURL: `${API_URL}/employees`,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'x-tenant-id': `${tenantId}`
       }
     });
 
@@ -26,13 +27,9 @@ class EmployeeService {
     );
   }
 
-  async getEmployees(tenantId) {
+  async getEmployees() {
     try {
-      const response = await this.api.get('/', {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.get('/');
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -48,39 +45,27 @@ class EmployeeService {
     }
   }
 
-  async createEmployee(tenantId, employeeData) {
+  async createEmployee(employeeData) {
     try {
-      const response = await this.api.post('/', employeeData, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.post('/', employeeData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  async updateEmployee(tenantId, id, updateData) {
+  async updateEmployee(id, updateData) {
     try {
-      const response = await this.api.put(`/${id}`, updateData, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.put(`/${id}`, updateData);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  async deleteEmployee(tenantId, id) {
+  async deleteEmployee(id) {
     try {
-      const response = await this.api.delete(`/${id}`, {
-        headers: {
-          'x-tenant-id': `${tenantId}`
-        }
-      });
+      const response = await this.api.delete(`/${id}`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -96,5 +81,4 @@ class EmployeeService {
   }
 }
 
-const employeeService = new EmployeeService();
-export default employeeService;
+export default EmployeeService;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRole } from '../hooks/useRole';
 import DepartmentService from '../services/DepartmentService';
-import employeeService from '../services/employeeService';
+import EmployeeService from '../services/EmployeeService';
 import { Card, Button, Input, Select, Table, Modal, Loading, Pagination } from './ui';
 import { Form } from './ui/Form';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,8 +18,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useModal } from './modal';
+import { useAuth } from '../hooks/useAuth';
 
 const DepartmentManagement = ({ selectedTenant }) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState(null);
   const [employees, setEmployees] = useState([]);
@@ -28,7 +30,6 @@ const DepartmentManagement = ({ selectedTenant }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [departmentStats, setDepartmentStats] = useState(null);
-
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -38,9 +39,10 @@ const DepartmentManagement = ({ selectedTenant }) => {
     headCount: '',
     status: 'active'
   });
-
+  const [ toggledModal, setToggledModal ] = useState(null);
   const { showModal, hideModal } = useModal();
-  const departmentService = new DepartmentService(selectedTenant)
+  const employeeService = new EmployeeService(user.tenantId);
+  const departmentService = new DepartmentService(user.tenantId);
 
   // Chart colors for department statistics
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -49,6 +51,166 @@ const DepartmentManagement = ({ selectedTenant }) => {
     fetchDepartments();
     fetchEmployees();
   }, [currentPage, searchTerm]);
+
+  useEffect(() => {
+    if (!toggledModal) {
+      return;
+    }
+
+    setToggledModal(null);
+    
+    if (toggledModal === 'add' || toggledModal === 'edit' && formData) {
+      
+      showModal(
+        <Form onSubmit={handleSubmit}>
+          <Input
+            label="Department Name"
+            name="name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+
+          <Input
+            label="Description"
+            name="description"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            required
+          />
+
+          <Select
+            label="Department Manager"
+            name="managerId"
+            value={formData.managerId}
+            onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
+            required
+            options={[
+                { value: '', label: 'No Manager'},
+                ...employees ? employees.map(employee => ({
+                    value: employee.id,
+                    label: `${employee.firstName} ${employee.lastName}`
+                })): []
+            ]}
+          />
+
+          <Select
+            label="Parent Department"
+            name="parentDepartmentId"
+            value={formData.parentDepartmentId}
+            onChange={(e) => setFormData({ ...formData, parentDepartmentId: e.target.value })}
+            options={[
+              { value: '', label: 'None (Top Level)' },
+                ...departments ? departments.filter(dept => dept.id !== currentDepartment?.id)
+                    .map(dept => ({
+                        value: dept.id,
+                        label: dept.name
+                    })
+                    ) : []
+            ]}
+          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Budget"
+              name="budget"
+              type="number"
+              value={formData.budget}
+              onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+              required
+            />
+
+            <Input
+              label="Head Count"
+              name="headCount"
+              type="number"
+              value={formData.headCount}
+              onChange={(e) => setFormData({ ...formData, headCount: e.target.value })}
+              required
+            />
+          </div>
+
+          <Select
+            label="Status"
+            name="status"
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            required
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' }
+            ]}
+          />
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button variant="secondary" onClick={() => hideModal()}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              {currentDepartment ? 'Update Department' : 'Add Department'}
+            </Button>
+          </div>
+        </Form>);
+
+    } else if (toggledModal === 'stats' && departmentStats) {
+      
+      showModal(<div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Card>
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold">Total Departments</h4>
+                  <p className="text-3xl font-bold text-primary-600">{departmentStats.totalDepartments}</p>
+                </div>
+              </Card>
+              <Card>
+                <div className="text-center">
+                  <h4 className="text-lg font-semibold">Total Employees</h4>
+                  <p className="text-3xl font-bold text-secondary-600">{departmentStats.totalEmployees}</p>
+                </div>
+              </Card>
+            </div>
+  
+            <Card>
+              <h4 className="text-lg font-semibold mb-4">Employee Distribution</h4>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={departmentStats.distribution}
+                      dataKey="departmentName"
+                      nameKey="departmentBudget"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label
+                    >
+                      {departmentStats.distribution.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+  
+            <div className="space-y-2">
+              <h4 className="text-lg font-semibold">Budget Overview</h4>
+              <div className="bg-gray-100 p-4 rounded-lg">
+                <div className="flex justify-between mb-2">
+                  <span>Total Budget</span>
+                  <span className="font-semibold">${departmentStats.totalBudget.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Average per Department</span>
+                  <span className="font-semibold">${departmentStats.averageBudget.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+    }
+  }, [ toggledModal, formData, departmentStats ]);
 
   const fetchDepartments = async () => {
     if (selectedTenant) {
@@ -162,161 +324,8 @@ const DepartmentManagement = ({ selectedTenant }) => {
   };
 
   const handleShowModal = (type) => {
-    if (type === 'edit') {
-      
-    showModal(
-      <Form onSubmit={handleSubmit}>
-        <Input
-          label="Department Name"
-          name="name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          required
-        />
-
-        <Input
-          label="Description"
-          name="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          required
-        />
-
-        <Select
-          label="Department Manager"
-          name="managerId"
-          value={formData.managerId}
-          onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
-          required
-          options={[
-              { value: '', label: 'No Manager'},
-              ...employees ? employees.map(employee => ({
-                  value: employee.id,
-                  label: `${employee.firstName} ${employee.lastName}`
-              })): []
-          ]}
-        />
-
-        <Select
-          label="Parent Department"
-          name="parentDepartmentId"
-          value={formData.parentDepartmentId}
-          onChange={(e) => setFormData({ ...formData, parentDepartmentId: e.target.value })}
-          options={[
-            { value: '', label: 'None (Top Level)' },
-              ...departments ? departments.filter(dept => dept.id !== currentDepartment?.id)
-                  .map(dept => ({
-                      value: dept.id,
-                      label: dept.name
-                  })
-                  ) : []
-          ]}
-        />
-
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Budget"
-            name="budget"
-            type="number"
-            value={formData.budget}
-            onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-            required
-          />
-
-          <Input
-            label="Head Count"
-            name="headCount"
-            type="number"
-            value={formData.headCount}
-            onChange={(e) => setFormData({ ...formData, headCount: e.target.value })}
-            required
-          />
-        </div>
-
-        <Select
-          label="Status"
-          name="status"
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-          required
-          options={[
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' }
-          ]}
-        />
-
-        <div className="flex justify-end space-x-2 mt-6">
-          <Button variant="secondary" onClick={() => hideModal()}>
-            Cancel
-          </Button>
-          <Button variant="primary" type="submit">
-            {currentDepartment ? 'Update Department' : 'Add Department'}
-          </Button>
-        </div>
-      </Form>);
-
-    } else if (type === 'stats') {
-      
-      showModal(
-        departmentStats ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <Card>
-                <div className="text-center">
-                  <h4 className="text-lg font-semibold">Total Departments</h4>
-                  <p className="text-3xl font-bold text-primary-600">{departmentStats.totalDepartments}</p>
-                </div>
-              </Card>
-              <Card>
-                <div className="text-center">
-                  <h4 className="text-lg font-semibold">Total Employees</h4>
-                  <p className="text-3xl font-bold text-secondary-600">{departmentStats.totalEmployees}</p>
-                </div>
-              </Card>
-            </div>
-  
-            <Card>
-              <h4 className="text-lg font-semibold mb-4">Employee Distribution</h4>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={departmentStats.distribution}
-                      dataKey="departmentName"
-                      nameKey="departmentBudget"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label
-                    >
-                      {departmentStats.distribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-  
-            <div className="space-y-2">
-              <h4 className="text-lg font-semibold">Budget Overview</h4>
-              <div className="bg-gray-100 p-4 rounded-lg">
-                <div className="flex justify-between mb-2">
-                  <span>Total Budget</span>
-                  <span className="font-semibold">${departmentStats.totalBudget.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Average per Department</span>
-                  <span className="font-semibold">${departmentStats.averageBudget.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-        : <Loading /> );
-    }
-  }
+    setToggledModal(type);
+  };
 
   return (
     <div className="space-y-6">

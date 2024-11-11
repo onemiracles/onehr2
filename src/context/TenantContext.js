@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
-import tenantService from '../services/tenantService';
 export const TenantContext = createContext();
 
 export const TenantProvider = ({ children }) => {
@@ -13,16 +12,12 @@ export const TenantProvider = ({ children }) => {
   const [featureAccess, setFeatureAccess] = useState({});
 
   const fetchTenantData = useCallback(async () => {
-    if (user?.tenantId) {
+    if (user?.tenant) {
       try {
         setTenantLoading(true);
-        const [tenantData, plans] = await Promise.all([
-          tenantService.getTenantById(user.tenantId),
-          tenantService.getSubscriptionPlans()
-        ]);
         
-        setCurrentTenant(tenantData);
-        setSubscriptionPlans(plans);
+        setCurrentTenant(user.tenant);
+        setSubscriptionPlans(user.tenant.subscriptionPlan);
         setTenantError(null);
 
         // Pre-fetch common feature access
@@ -33,16 +28,16 @@ export const TenantProvider = ({ children }) => {
           'payroll_management'
         ];
 
-        const featureAccessMap = {};
-        await Promise.all(
-          commonFeatures.map(async (feature) => {
-            featureAccessMap[feature] = await tenantService.checkFeatureAccess(
-              user.tenantId,
-              feature
-            );
-          })
-        );
-        setFeatureAccess(featureAccessMap);
+        // const featureAccessMap = {};
+        // await Promise.all(
+        //   commonFeatures.map(async (feature) => {
+        //     featureAccessMap[feature] = await tenantService.checkFeatureAccess(
+        //       user.tenantId,
+        //       feature
+        //     );
+        //   })
+        // );
+        setFeatureAccess(user.tenant.features);
 
       } catch (error) {
         console.error('Failed to fetch tenant data:', error);
@@ -60,102 +55,102 @@ export const TenantProvider = ({ children }) => {
     fetchTenantData();
   }, [fetchTenantData]);
 
-  const checkFeatureAccess = useCallback(async (featureName) => {
-    if (!user?.tenantId) return false;
+  // const checkFeatureAccess = useCallback(async (featureName) => {
+  //   if (!user?.tenantId) return false;
 
-    // Return cached result if available
-    if (featureAccess.hasOwnProperty(featureName)) {
-      return featureAccess[featureName];
-    }
+  //   // Return cached result if available
+  //   if (featureAccess.hasOwnProperty(featureName)) {
+  //     return featureAccess[featureName];
+  //   }
 
-    try {
-      const hasAccess = await tenantService.checkFeatureAccess(
-        user.tenantId,
-        featureName
-      );
+  //   try {
+  //     const hasAccess = await tenantService.checkFeatureAccess(
+  //       user.tenantId,
+  //       featureName
+  //     );
       
-      // Cache the result
-      setFeatureAccess(prev => ({
-        ...prev,
-        [featureName]: hasAccess
-      }));
+  //     // Cache the result
+  //     setFeatureAccess(prev => ({
+  //       ...prev,
+  //       [featureName]: hasAccess
+  //     }));
 
-      return hasAccess;
-    } catch (error) {
-      console.error('Error checking feature access:', error);
-      return false;
-    }
-  }, [user?.tenantId, featureAccess]);
+  //     return hasAccess;
+  //   } catch (error) {
+  //     console.error('Error checking feature access:', error);
+  //     return false;
+  //   }
+  // }, [user?.tenantId, featureAccess]);
 
-  const updateTenantInfo = async (updateData) => {
-    try {
-      setTenantLoading(true);
-      const updatedTenant = await tenantService.updateTenant(
-        currentTenant.id,
-        updateData
-      );
-      setCurrentTenant(updatedTenant);
-      setTenantError(null);
-      return updatedTenant;
-    } catch (error) {
-      setTenantError('Failed to update organization information');
-      throw error;
-    } finally {
-      setTenantLoading(false);
-    }
-  };
+  // const updateTenantInfo = async (updateData) => {
+  //   try {
+  //     setTenantLoading(true);
+  //     const updatedTenant = await tenantService.updateTenant(
+  //       currentTenant.id,
+  //       updateData
+  //     );
+  //     setCurrentTenant(updatedTenant);
+  //     setTenantError(null);
+  //     return updatedTenant;
+  //   } catch (error) {
+  //     setTenantError('Failed to update organization information');
+  //     throw error;
+  //   } finally {
+  //     setTenantLoading(false);
+  //   }
+  // };
 
-  const updateSubscription = async (planName) => {
-    try {
-      setTenantLoading(true);
-      const updatedTenant = await tenantService.updateSubscription(
-        currentTenant.id,
-        { plan: planName }
-      );
-      setCurrentTenant(updatedTenant);
+  // const updateSubscription = async (planName) => {
+  //   try {
+  //     setTenantLoading(true);
+  //     const updatedTenant = await tenantService.updateSubscription(
+  //       currentTenant.id,
+  //       { plan: planName }
+  //     );
+  //     setCurrentTenant(updatedTenant);
       
-      // Clear feature access cache after plan change
-      setFeatureAccess({});
+  //     // Clear feature access cache after plan change
+  //     setFeatureAccess({});
       
-      setTenantError(null);
-      return updatedTenant;
-    } catch (error) {
-      setTenantError('Failed to update subscription');
-      throw error;
-    } finally {
-      setTenantLoading(false);
-    }
-  };
+  //     setTenantError(null);
+  //     return updatedTenant;
+  //   } catch (error) {
+  //     setTenantError('Failed to update subscription');
+  //     throw error;
+  //   } finally {
+  //     setTenantLoading(false);
+  //   }
+  // };
 
-  const updateSettings = async (settings) => {
-    try {
-      setTenantLoading(true);
-      const updatedSettings = await tenantService.updateTenantSettings(
-        currentTenant.id,
-        settings
-      );
-      setCurrentTenant(prev => ({
-        ...prev,
-        settings: updatedSettings
-      }));
-      return updatedSettings;
-    } catch (error) {
-      setTenantError('Failed to update settings');
-      throw error;
-    } finally {
-      setTenantLoading(false);
-    }
-  };
+  // const updateSettings = async (settings) => {
+  //   try {
+  //     setTenantLoading(true);
+  //     const updatedSettings = await tenantService.updateTenantSettings(
+  //       currentTenant.id,
+  //       settings
+  //     );
+  //     setCurrentTenant(prev => ({
+  //       ...prev,
+  //       settings: updatedSettings
+  //     }));
+  //     return updatedSettings;
+  //   } catch (error) {
+  //     setTenantError('Failed to update settings');
+  //     throw error;
+  //   } finally {
+  //     setTenantLoading(false);
+  //   }
+  // };
 
   const value = {
     currentTenant,
     tenantLoading,
     tenantError,
     subscriptionPlans,
-    checkFeatureAccess,
-    updateTenantInfo,
-    updateSubscription,
-    updateSettings,
+    // checkFeatureAccess,
+    // updateTenantInfo,
+    // updateSubscription,
+    // updateSettings,
     refreshTenant: fetchTenantData
   };
 

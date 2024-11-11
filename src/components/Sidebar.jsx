@@ -33,8 +33,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Users', icon: faUsers, path: '/admin/users', permission: 'manage_companies' },
     { name: 'Tenants', icon: faBuilding, path: '/admin/tenants', permission: 'manage_companies' },
     { name: 'Features', icon: faStar, path: '/admin/features', permission: 'manage_companies' },
-    { name: 'Tenant Employees', icon: faStar, path: '/admin/employees', permission: 'manage_companies' },
-    { name: 'Tenant Departments', icon: faStar, path: '/admin/departments', permission: 'manage_companies' },
+    // { name: 'Tenant Employees', icon: faStar, path: '/admin/employees', permission: 'manage_companies' },
+    // { name: 'Tenant Departments', icon: faStar, path: '/admin/departments', permission: 'manage_companies' },
   ];
 
   return (

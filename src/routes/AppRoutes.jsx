@@ -45,6 +45,7 @@ import Tasks from '../pages/employee/Tasks';
 import Performance from '../pages/employee/Performance'
 import ViewAchievements from '../pages/employee/ViewAchievements.jsx';
 import RequestFeedback from '../pages/employee/RequestFeedback.jsx';
+import { Loading } from '../components/ui';
 
 const PrivateRoute = ({ children, requiredPermission }) => {
   const { user, loading } = useAuth();
@@ -52,7 +53,7 @@ const PrivateRoute = ({ children, requiredPermission }) => {
   const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (!user) {
@@ -87,9 +88,11 @@ const AppRoutes = () => {
         <Route path="admin" element={<PrivateRoute requiredPermission="manage_companies"><Navigate to="tenants" replace /></PrivateRoute>} />
         <Route path="admin/tenants" element={<PrivateRoute requiredPermission="manage_companies"><TenantManagement /></PrivateRoute>} />
         <Route path="admin/features" element={<PrivateRoute requiredPermission="manage_companies"><FeatureManagement /></PrivateRoute>} />
-        <Route path="admin/employees" element={<PrivateRoute requiredPermission="manage_companies"><TenantEmployeeManagement /></PrivateRoute>} />
-        <Route path="admin/departments" element={<PrivateRoute requiredPermission="manage_companies"><TenantDepartmentManagement /></PrivateRoute>} />
+        {/* <Route path="admin/employees" element={<PrivateRoute requiredPermission="manage_companies"><TenantEmployeeManagement /></PrivateRoute>} />
+        <Route path="admin/departments" element={<PrivateRoute requiredPermission="manage_companies"><TenantDepartmentManagement /></PrivateRoute>} /> */}
         <Route path="admin/users" element={<PrivateRoute requiredPermission="manage_companies"><UserManagement /></PrivateRoute>} />
+        <Route path="admin/tenants/:id/employees" element={<PrivateRoute requiredPermission="manage_companies"><TenantEmployeeManagement /></PrivateRoute>} />
+        <Route path="admin/tenants/:id/departments" element={<PrivateRoute requiredPermission="manage_companies"><TenantDepartmentManagement /></PrivateRoute>} />
 
         {/* HR routes */}
         <Route path="hr" element={<PrivateRoute requiredPermission="manage_hr"><Navigate to="employees" replace /></PrivateRoute>} />

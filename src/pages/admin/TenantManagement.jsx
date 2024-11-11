@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useRole } from '../../hooks/useRole';
 import tenantService from '../../services/tenantService';
-import { Table, Button, Modal, Input, Select } from '../../components/ui';
-import { Form } from '../../components/ui/Form';
+import { Table, Button, Input, Select, Loading, Form } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTrash, faPlus, faBuilding, faPeopleGroup } from '@fortawesome/free-solid-svg-icons';
+import { Link } from 'react-router-dom';
+import { useModal } from '../../components/modal';
 
 const TenantManagement = () => {
   const { hasPermission } = useRole();
   const [tenants, setTenants] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTenant, setEditingTenant] = useState(null);
-  const [form, setForm] = useState({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
+  const { showModal, hideModal } = useModal();
 
   useEffect(() => {
     fetchTenants();
@@ -27,46 +26,91 @@ const TenantManagement = () => {
     }
   };
 
-  const handleOpenModal = (tenant = null) => {
-    if (tenant) {
-      setForm(tenant);
-      setEditingTenant(tenant);
+  const handleOpenModal = (data = null) => {
+    let state;
+    if (data) {
+      state = {name: data.name, industry: data.industry, employeeCount: data.employeeCount, subscriptionPlan: data.subscriptionPlan};
     } else {
-      setForm({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
-      setEditingTenant(null);
+      state = { name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' };
     }
-    setIsModalOpen(true);
+    showModal(<ModalContent data={data} initalState={state} />,
+    {
+      title: data ? 'Edit Tenant' : 'Add Tenant'
+    });
+  };
+
+  const ModalContent = ({initalState, data = null}) => {
+    const [state, setState] = useState(initalState);
+
+    const handleInputChange = (e) => {
+      let { name, value, type } = e.target;
+      if (type === 'number') {
+        value = Number(value);
+      }
+      setState({ ...state, [name]: value });
+    };
+  
+    const handleSubmit = async (e) => {
+      // e.preventDefault();
+      try {
+        if (data) {
+          delete state._count;
+          await tenantService.updateTenant(data.id, state);
+        } else {
+          await tenantService.createTenant(state);
+        }
+        fetchTenants();
+        handleCloseModal();
+      } catch (error) {
+        console.error('Failed to save tenant:', error);
+        // Handle error (e.g., show error message to user)
+      }
+    };
+
+    return (state && <Form onSubmit={handleSubmit}>
+      <Input
+        label="Name"
+        name="name"
+        value={state.name}
+        onChange={handleInputChange}
+        required
+      />
+      <Input
+        label="Industry"
+        name="industry"
+        value={state.industry}
+        onChange={handleInputChange}
+        required
+      />
+      <Input
+        label="Employee Count"
+        name="employeeCount"
+        type="number"
+        value={state.employeeCount}
+        onChange={handleInputChange}
+        required
+      />
+      <Select
+        label="Subscription Plan"
+        name="subscriptionPlan"
+        value={state.subscriptionPlan}
+        onChange={handleInputChange}
+        required
+        options={[
+          { value: 'Free', label: 'Free' },
+          { value: 'Basic', label: 'Basic' },
+          { value: 'Pro', label: 'Pro' },
+          { value: 'Enterprise', label: 'Enterprise' },
+        ]}
+      />
+      <Button type="submit" variant="primary">
+        {data ? 'Update Tenant' : 'Create Tenant'}
+      </Button>
+    </Form>);
   };
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingTenant(null);
-    setForm({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
-  };
-
-  const handleInputChange = (e) => {
-    let { name, value, type } = e.target;
-    if (type === 'number') {
-      value = Number(value);
-    }
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleSubmit = async (e) => {
-    // e.preventDefault();
-    try {
-      if (editingTenant) {
-        delete form._count;
-        await tenantService.updateTenant(editingTenant.id, form);
-      } else {
-        await tenantService.createTenant(form);
-      }
-      fetchTenants();
-      handleCloseModal();
-    } catch (error) {
-      console.error('Failed to save tenant:', error);
-      // Handle error (e.g., show error message to user)
-    }
+    hideModal();
   };
 
   const handleDelete = async (id) => {
@@ -89,7 +133,7 @@ const TenantManagement = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Tenant Management</h1>
-        <Button onClick={() => handleOpenModal()} className="bg-primary-600 hover:bg-primary-700 text-white">
+        <Button onClick={() => handleOpenModal()} variant="primary">
           <FontAwesomeIcon icon={faPlus} className="mr-2" />
           Add Tenant
         </Button>
@@ -103,58 +147,25 @@ const TenantManagement = () => {
           tenant.employeeCount,
           tenant.subscriptionPlan,
           <div key={tenant.id} className="flex space-x-2">
-            <Button onClick={() => handleOpenModal(tenant)} className="bg-secondary-500 hover:bg-secondary-600 text-white">
+            <Link to={`${tenant.id}/employees`}>
+              <Button variant="secondary">
+                <FontAwesomeIcon icon={faPeopleGroup} />
+              </Button>
+            </Link>
+            <Link to={`${tenant.id}/departments`}>
+              <Button variant="secondary">
+                <FontAwesomeIcon icon={faBuilding} />
+              </Button>
+            </Link>
+            <Button onClick={() => handleOpenModal(tenant)} variant="secondary">
               <FontAwesomeIcon icon={faEdit} />
             </Button>
-            <Button onClick={() => handleDelete(tenant.id)} className="bg-red-500 hover:bg-red-600 text-white">
+            <Button onClick={() => handleDelete(tenant.id)} variant="danger">
               <FontAwesomeIcon icon={faTrash} />
             </Button>
           </div>
         ])}
       />
-
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title={editingTenant ? 'Edit Tenant' : 'Add Tenant'}>
-        <Form onSubmit={handleSubmit}>
-          <Input
-            label="Name"
-            name="name"
-            value={form.name}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Industry"
-            name="industry"
-            value={form.industry}
-            onChange={handleInputChange}
-            required
-          />
-          <Input
-            label="Employee Count"
-            name="employeeCount"
-            type="number"
-            value={form.employeeCount}
-            onChange={handleInputChange}
-            required
-          />
-          <Select
-            label="Subscription Plan"
-            name="subscriptionPlan"
-            value={form.subscriptionPlan}
-            onChange={handleInputChange}
-            required
-            options={[
-              { value: 'Free', label: 'Free' },
-              { value: 'Basic', label: 'Basic' },
-              { value: 'Pro', label: 'Pro' },
-              { value: 'Enterprise', label: 'Enterprise' },
-            ]}
-          />
-          <Button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white mt-4">
-            {editingTenant ? 'Update Tenant' : 'Create Tenant'}
-          </Button>
-        </Form>
-      </Modal>
     </div>
   );
 };

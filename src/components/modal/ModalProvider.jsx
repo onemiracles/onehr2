@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, forwardRef } from 'react';
+import React, { useState, useCallback, useRef, forwardRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -72,8 +72,9 @@ export const ModalProvider = ({ children }) => {
       loading: false,
       ...options,
     };
-
-    setModals(prev => [...prev, { isOpen: true, content, options: defaultOptions }]);
+    const modal = { isOpen: true, content, options: defaultOptions };
+    setModals(prev => [...prev, modal]);
+    return modal;
   }, []);
 
   const hideModal = useCallback(() => {
@@ -94,7 +95,7 @@ export const ModalProvider = ({ children }) => {
   const contextValue = {
     showModal,
     hideModal,
-    hideAllModal,
+    hideAllModal
   };
 
   return (

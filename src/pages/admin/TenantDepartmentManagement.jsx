@@ -3,14 +3,17 @@ import { useRole } from '../../hooks/useRole';
 import DepartmentManagement from '../../components/DepartmentManagement';
 import tenantService from '../../services/tenantService';
 import { Card, Button, Input, Select, Table, Modal, Spinner, Pagination } from '../../components/ui';
+import { useParams } from 'react-router-dom';
 
 const TenantDepartmentManagement = () => {
   const { hasPermission } = useRole();
   const [tenants, setTenants] = useState([]);
   const [selectedTenant, setSelectedTenant] = useState('');
+  const { id } = useParams();
 
   useEffect(() => {
-    fetchTenants();
+    // fetchTenants();
+    setSelectedTenant(id);
   }, []);
 
   const fetchTenants = async () => {
@@ -33,7 +36,7 @@ const TenantDepartmentManagement = () => {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Department Management
           </h2>
-          <Select
+          {/* <Select
             label="Select Tenant"
             value={selectedTenant ?? -1}
             onChange={(e) => setSelectedTenant(e.target.value == -1 ? null : e.target.value)}
@@ -44,7 +47,7 @@ const TenantDepartmentManagement = () => {
                     label: tenant.name
                 }))
             ]}
-          />
+          /> */}
         </div>
 
         {selectedTenant && (
