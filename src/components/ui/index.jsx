@@ -13,6 +13,7 @@ export const Button = forwardRef(({ children, className, variant = 'primary', si
   const variantClasses = {
     primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
     secondary: 'bg-secondary-600 hover:bg-secondary-700 text-white focus:ring-secondary-500',
+    success: 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-400',
     warning: 'bg-yellow-500 hover:bg-yellow-600 text-white focus:ring-yellow-400',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
     outline: 'dark:text-white dark:border-white bg-transparent border border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900 focus:ring-primary-500',

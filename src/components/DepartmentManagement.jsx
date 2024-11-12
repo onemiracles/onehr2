@@ -75,10 +75,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
     }
 
     try {
-      // Replace with actual API call
-      await fetch(`/api/tenants/${selectedTenant}/departments/${departmentId}`, {
-        method: 'DELETE'
-      });
+      await departmentService.deleteDepartment(departmentId);
       fetchDepartments();
     } catch (error) {
       console.error('Failed to delete department:', error);
@@ -91,7 +88,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
         name: data.name ?? '',
         description: data.description ?? '',
         managerId: data.managerId ?? '',
-        parentDepartmentId: data.parentDepartmentId ?? '',
+        parentId: data.parentId ?? '',
         budget: data.budget ?? '',
         headCount: data.headCount ?? '',
         status: data.status ?? ''
@@ -99,7 +96,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
         name: '',
         description: '',
         managerId: '',
-        parentDepartmentId: '',
+        parentId: '',
         budget: '',
         headCount: '',
         status: 'active'
@@ -150,7 +147,6 @@ const DepartmentManagement = ({ selectedTenant }) => {
         name="description"
         value={state.description}
         onChange={handleInputChange}
-        required
       />
 
       <Select
@@ -169,8 +165,8 @@ const DepartmentManagement = ({ selectedTenant }) => {
 
       <Select
         label="Parent Department"
-        name="parentDepartmentId"
-        value={state.parentDepartmentId}
+        name="parentId"
+        value={state.parentId}
         onChange={handleInputChange}
         options={[
           { value: '', label: 'None (Top Level)' },
@@ -342,7 +338,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
                     <FontAwesomeIcon icon={faEdit} />
                     </Button>
                     <Button
-                    variant="secondary"
+                    variant="danger"
                     onClick={() => handleDeleteDepartment(dept.id)}
                     >
                     <FontAwesomeIcon icon={faTrash} />

@@ -58,26 +58,23 @@ const UserManagement = () => {
     }
   }, [currentPage, filters]);
 
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
-
-  useEffect(() => {
-    const fetchTenants = async () => {
-      try {
-        const response = await tenantService.getTenants();
-        setTenants(response);
-      } catch (error) {
-        console.error('Failed to fetch tenants:', error);
-      }
-    };
-    const fetchUserStats = async () => {
-      const response = await userService.getStats()
-      userStats(response);
-    }
-    fetchTenants();
-    fetchUserStats();
+  const fetchUserStats = useCallback(async () => {
+    const response = await userService.getStats()
+    userStats(response);
   }, []);
+
+  const fetchTenants = useCallback(async () => {
+    try {
+      const response = await tenantService.getTenants();
+      setTenants(response);
+    } catch (error) {
+      console.error('Failed to fetch tenants:', error);
+    }
+  }, []);
+
+  useEffect(() => {fetchUsers();}, [fetchUsers]);
+  useEffect(() => {fetchUserStats();}, [fetchUserStats]);
+  useEffect(() => {fetchTenants();}, [fetchTenants]);
 
   const handleFilterChange = (name, value) => {
     setFilters(prev => ({ ...prev, [name]: value }));
@@ -99,10 +96,7 @@ const UserManagement = () => {
 
   const toggleUserStatus = async (user) => {
     try {
-      // Replace with actual API call
-      await fetch(`/api/admin/users/${user.id}/toggle-status`, {
-        method: 'POST'
-      });
+      await userService.updateStatus(user.id, user.status === 'active' ? 'inactive' : 'active');
       fetchUsers();
     } catch (error) {
       console.error('Failed to toggle user status:', error);
@@ -124,7 +118,7 @@ const UserManagement = () => {
         tenantId: data.tenantId ?? '',
         status: data.status ?? '',
         position: data.position ?? '',
-        startDate: formatDate(data.startDate, 'calendar') ?? '',
+        startDate: data.startDate ? formatDate(data.startDate, 'calendar') : '',
         department: data.departmentId ?? ''
       } : {
         firstName: '',
@@ -163,8 +157,12 @@ const UserManagement = () => {
     const [departments, setDepartments] = useState([]);
 
     useEffect(() => {
-      const tenant = tenants.find((e) => e.id === state.tenantId);
-      setDepartments(tenant.departments);
+      if (state.tenantId) {
+        const tenant = tenants.find((e) => e.id === state.tenantId);
+        setDepartments(tenant.departments);
+      } else {
+        setDepartments([]);
+      }
     }, [state.tenantId])
 
     const handleSubmit = async (e) => {
@@ -194,7 +192,6 @@ const UserManagement = () => {
           label="Last Name"
           value={state.lastName}
           onChange={(e) => setState({ ...state, lastName: e.target.value })}
-          required
         />
       </div>
 
@@ -218,6 +215,7 @@ const UserManagement = () => {
         onChange={(e) => setState({ ...state, role: e.target.value })}
         required
         options={[
+          { value: '', label: 'Select Role' },
           { value: 'SUPER_ADMIN', label: 'Super Admin' },
           { value: 'COMPANY_ADMIN', label: 'Company Admin' },
           { value: 'COMPANY_MANAGER', label: 'Company Manager' },
@@ -231,7 +229,7 @@ const UserManagement = () => {
         onChange={(e) => setState({ ...state, tenantId: e.target.value })}
         required={state.role !== 'SUPER_ADMIN'}
         options={[
-          { value: '', label: 'Select Tenant' },
+          { value: '', label: 'No Tenant' },
           ...tenants.map(tenant => ({
             value: tenant.id,
             label: tenant.name
@@ -243,7 +241,6 @@ const UserManagement = () => {
         label="Department"
         value={state.department}
         onChange={(e) => setState({ ...state, department: e.target.value })}
-        required
         options={[
           { value: '', label: 'No Department' },
           ...departments.map(dept => ({ value: dept.id, label: dept.name }))
@@ -290,20 +287,14 @@ const UserManagement = () => {
   const PasswordModalContent = ({data}) => {
     const [state, setState] = useState({newPassword: '', confirmPassword: ''});
     
-    const handlePasswordResetSubmit = async (e) => {
-      e.preventDefault();
+    const handlePasswordResetSubmit = async () => {
       if (state.newPassword !== state.confirmPassword) {
         alert('Passwords do not match');
         return;
       }
 
       try {
-        // Replace with actual API call
-        await fetch(`/api/admin/users/${data}/reset-password`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: state.newPassword })
-        });
+        await userService.updatePassword(data, state.newPassword);
         handleHideModal();
       } catch (error) {
         console.error('Failed to reset password:', error);

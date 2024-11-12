@@ -407,26 +407,7 @@ const LeaveRequests = () => {
                 }`}>
                   {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                 </span>,
-                request.status === 'pending' ? (
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="success"
-                      onClick={() => handleApproveRequest(request.id)}
-                      className="text-sm"
-                    >
-                      <FontAwesomeIcon icon={faCheck} className="mr-1" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onClick={() => handleRejectRequest(request.id)}
-                      className="text-sm"
-                    >
-                      <FontAwesomeIcon icon={faTimes} className="mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                ) : (
+                <div className="flex space-x-2">
                   <Button
                     variant="secondary"
                     onClick={() => {
@@ -435,10 +416,26 @@ const LeaveRequests = () => {
                     }}
                     className="text-sm"
                   >
-                    <FontAwesomeIcon icon={faEye} className="mr-1" />
+                    <FontAwesomeIcon icon={faEye} />
                     View
                   </Button>
-                )
+                  {request.status === 'pending' && <><Button
+                    variant="success"
+                    onClick={() => handleApproveRequest(request.id)}
+                    className="text-sm"
+                  >
+                    <FontAwesomeIcon icon={faCheck} />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleRejectRequest(request.id)}
+                    className="text-sm"
+                  >
+                    <FontAwesomeIcon icon={faTimes} className="mr-1" />
+                    Reject
+                  </Button></>}
+                </div>
               ])}
           />
         </div>

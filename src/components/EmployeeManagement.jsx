@@ -5,14 +5,10 @@ import { useModal } from './modal';
 import DepartmentService from '../services/DepartmentService';
 import { Form, Card, Button, Input, Select, Table, Loading, Pagination } from '../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-  faUserPlus,
-  faEdit,
-  faTrash,
-} from '@fortawesome/free-solid-svg-icons';
+import { faUserPlus, faEdit, faTrash, faUserCircle, faEnvelope, faPhone, faBriefcase, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { formatDate } from '../utils';
 
-const EmployeeManagement = ({ selectedTenant }) => {
+const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   const { hasPermission } = useRole();
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState(null);
@@ -62,7 +58,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
     }
 
     try {
-      await employeeService.deleteEmployee(selectedTenant, employeeId)
+      await employeeService.deleteEmployee(employeeId)
       fetchEmployees();
     } catch (error) {
       console.error('Failed to delete employee:', error);
@@ -79,7 +75,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
       tenantId: data.tenantId ?? '',
       departmentId: data.departmentId ?? '',
       position: data.position ?? '',
-      startDate: formatDate(data.startDate, 'calendar') ?? '',
+      startDate: data.startDate ? formatDate(data.startDate, 'calendar') : '',
       status: data.status ?? ''
     } : {
       firstName: '',
@@ -99,17 +95,22 @@ const EmployeeManagement = ({ selectedTenant }) => {
       });
   };
 
-  if (!hasPermission('manage_companies')) {
+  if (!hasPermission('manage_hr')) {
     return <div>You do not have permission to access this page.</div>;
   }
 
   const ModelContent = ({initailState, data = null}) => {
     const [state, setState] = useState(initailState);
 
-    const handleSubmit = async (e) => {
-      if (state.departmentId === '') {
-          delete state.departmentId;
+    const handleInputChange = (e) => {
+      let { name, value, type } = e.target;
+      if (type === 'number') {
+        value = Number(value);
       }
+      setState({ ...state, [name]: value });
+    };
+
+    const handleSubmit = async (e) => {
       try {
         if (data) {
           await employeeService.updateEmployee(data.id, state);
@@ -129,14 +130,14 @@ const EmployeeManagement = ({ selectedTenant }) => {
           label="First Name"
           name="firstName"
           value={state.firstName}
-          onChange={(e) => setState({ ...state, firstName: e.target.value })}
+          onChange={handleInputChange}
           required
         />
         <Input
           label="Last Name"
           name="lastName"
           value={state.lastName}
-          onChange={(e) => setState({ ...state, lastName: e.target.value })}
+          onChange={handleInputChange}
           required
         />
       </div>
@@ -145,7 +146,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
         label="Phone"
         name="phone"
         value={state.phone}
-        onChange={(e) => setState({ ...state, phone: e.target.value })}
+        onChange={handleInputChange}
         required
       />
 
@@ -154,7 +155,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
         name="email"
         type="email"
         value={state.email}
-        onChange={(e) => setState({ ...state, email: e.target.value })}
+        onChange={handleInputChange}
         required
       />
 
@@ -162,7 +163,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
         label="Role"
         name="role"
         value={state.role}
-        onChange={(e) => setState({ ...state, role: e.target.value })}
+        onChange={handleInputChange}
         required
         options={[
           { value: 'COMPANY_ADMIN', label: 'Company Admin' },
@@ -173,9 +174,9 @@ const EmployeeManagement = ({ selectedTenant }) => {
 
       <Select
         label="Department"
-        name="department"
+        name="departmentId"
         value={state.departmentId}
-        onChange={(e) => setState({ ...state, departmentId: e.target.value })}
+        onChange={handleInputChange}
         options={[
             { value: '', label: 'No Department' },
             ...(departments ? departments.map((e) => {
@@ -188,8 +189,7 @@ const EmployeeManagement = ({ selectedTenant }) => {
         label="Position"
         name="position"
         value={state.position}
-        onChange={(e) => setState({ ...state, position: e.target.value })}
-        required
+        onChange={handleInputChange}
       />
 
       <Input
@@ -197,14 +197,14 @@ const EmployeeManagement = ({ selectedTenant }) => {
         name="startDate"
         type="date"
         value={state.startDate}
-        onChange={(e) => setState({ ...state, startDate: e.target.value })}
+        onChange={handleInputChange}
       />
 
       <Select
         label="Status"
         name="status"
         value={state.status}
-        onChange={(e) => setState({ ...state, status: e.target.value })}
+        onChange={handleInputChange}
         required
         options={[
           { value: 'active', label: 'Active' },
@@ -223,88 +223,150 @@ const EmployeeManagement = ({ selectedTenant }) => {
     </Form>);
   };
 
+  const EmployeeCard = ({ employee }) => {
+    let formattedDate = 'N/A';
+    if (employee.startDate) {
+      formattedDate = formatDate(employee.startDate);
+    }
+    return (
+      <Card className="mb-4 p-4 bg-white dark:bg-gray-800 shadow-lg">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center">
+            <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+              <FontAwesomeIcon icon={faUserCircle} className="text-2xl text-primary-600 dark:text-primary-400" />
+            </div>
+            <div className="ml-4">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                {employee.firstName} {employee.lastName}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{employee.position}</p>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <Button variant="secondary" onClick={() => handleShowModal(employee)}>
+              <FontAwesomeIcon icon={faEdit} className="mr-1" />
+              Edit
+            </Button>
+            <Button variant="danger" onClick={() => handleDeleteEmployee(employee.id)}>
+              <FontAwesomeIcon icon={faTrash} className="mr-1" />
+              Delete
+            </Button>
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="flex items-center">
+            <FontAwesomeIcon icon={faEnvelope} className="text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600 dark:text-gray-300">{employee.email ?? 'N/A'}</span>
+          </div>
+          <div className="flex items-center">
+            <FontAwesomeIcon icon={faPhone} className="text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600 dark:text-gray-300">{employee.phone ?? 'N/A'}</span>
+          </div>
+          <div className="flex items-center">
+            <FontAwesomeIcon icon={faBriefcase} className="text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600 dark:text-gray-300">{employee.department?.name ?? 'N/A'}</span>
+          </div>
+          <div className="flex items-center">
+            <FontAwesomeIcon icon={faCalendarAlt} className="text-gray-500 mr-2" />
+            <span className="text-sm text-gray-600 dark:text-gray-300">{formattedDate}</span>
+          </div>
+        </div>
+        <div className="mt-2">
+          <span className={`inline-block px-2 py-1 rounded-full text-xs ${employee.status === 'active' ? 'bg-green-100 text-green-800' :
+              employee.status === 'inactive' ? 'bg-red-100 text-red-800' :
+                'bg-yellow-100 text-yellow-800'}`}>
+            {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
+          </span>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex space-x-4 flex-1 mr-4">
-            <Input
-              type="text"
-              placeholder="Search employees..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              className="max-w-xs"
-            />
-            <Select
-              value={filterRole}
-              onChange={(e) => setFilterRole(e.target.value)}
-              className="max-w-xs"
-              options={[
-                { value: '', label: 'All Roles' },
-                { value: 'COMPANY_ADMIN', label: 'Company Admin' },
-                { value: 'COMPANY_MANAGER', label: 'Manager' },
-                { value: 'COMPANY_EMPLOYEE', label: 'Employee' }
-              ]}
-            />
-          </div>
-          <Button variant="primary" onClick={() => handleShowModal()}>
-            <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-            Add Employee
-          </Button>
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex space-x-4 flex-1 mr-4">
+          <Input
+            type="text"
+            placeholder="Search employees..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="max-w-xs"
+          />
+          <Select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="max-w-xs"
+            options={[
+              { value: '', label: 'All Roles' },
+              { value: 'COMPANY_ADMIN', label: 'Company Admin' },
+              { value: 'COMPANY_MANAGER', label: 'Manager' },
+              { value: 'COMPANY_EMPLOYEE', label: 'Employee' }
+            ]}
+          />
         </div>
+        <Button variant="primary" onClick={() => handleShowModal()}>
+          <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
+          Add Employee
+        </Button>
+      </div>
 
-        {loading ? (
-          <Loading />
-        ) : (
-          <>
-            <Table
-              headers={[
-                'Name',
-                'Email',
-                'Role',
-                'Department',
-                'Position',
-                'Status',
-                'Actions'
-              ]}
-              data={employees.map((employee) => [
-                `${employee.firstName} ${employee.lastName}`,
-                employee.email,
-                employee.role,
-                employee.department?.name ?? '_',
-                employee.position,
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  employee.status === 'active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {employee.status}
-                </span>,
-                <div className="flex space-x-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleShowModal(employee)}
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleDeleteEmployee(employee.id)}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button>
-                </div>
-              ])}
-            />
+      {loading ? (
+        <Loading />
+      ) : (
+        <>
+          {display === 'table' ? <Table
+            headers={[
+              'Name',
+              'Email',
+              'Role',
+              'Department',
+              'Position',
+              'Status',
+              'Actions'
+            ]}
+            data={employees.map((employee) => [
+              `${employee.firstName} ${employee.lastName}`,
+              employee.email,
+              employee.role,
+              employee.department?.name ?? '_',
+              employee.position,
+              <span className={`px-2 py-1 rounded-full text-xs ${
+                employee.status === 'active' 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {employee.status}
+              </span>,
+              <div className="flex space-x-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleShowModal(employee)}
+                >
+                  <FontAwesomeIcon icon={faEdit} />
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => handleDeleteEmployee(employee.id)}
+                >
+                  <FontAwesomeIcon icon={faTrash} />
+                </Button>
+              </div>
+            ])}
+          />
+          : <div className="grid grid-cols-1 gap-4">
+            {employees.map(employee => (
+              <EmployeeCard key={employee.id} employee={employee} />
+            ))}
+          </div>}
 
-            <Pagination
-              currentPage={currentPage}
-              total={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </>
-        )}
-      </Card>
+          <Pagination
+            currentPage={currentPage}
+            total={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
     </div>
   );
 };

@@ -73,6 +73,24 @@ class UserService {
     }
   }
 
+  async updateStatus(id, status) {
+    try {
+      const response = await this.api.put(`/${id}/status`, {status});
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updatePassword(id, password) {
+    try {
+      const response = await this.api.put(`/${id}/password`, {password});
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async deleteUser(id) {
     try {
       const response = await this.api.delete(`/${id}`);
