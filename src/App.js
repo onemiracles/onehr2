@@ -4,12 +4,13 @@ import { AuthProvider } from './context/AuthContext';
 import { RoleProvider } from './context/RoleContext';
 import { TenantProvider } from './context/TenantContext';
 import AppRoutes from './routes/AppRoutes';
-import ModalProvider from './components/modal/ModalProvider';
+import { Provider } from 'react-redux';
+import store from './store/store';
 
 function App() {
   return (
     <Router>
-      <ModalProvider>
+      <Provider store={store}>
         <AuthProvider>
           <RoleProvider>
             <TenantProvider>
@@ -17,7 +18,7 @@ function App() {
             </TenantProvider>
           </RoleProvider>
         </AuthProvider>
-      </ModalProvider>
+      </Provider>
     </Router>
   );
 }

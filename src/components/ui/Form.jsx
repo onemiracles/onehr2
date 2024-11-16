@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { Button } from './';
+import React, { forwardRef, useState } from 'react';
 import { cn } from '../../utils/cn';
 
-export const Form = ({ onSubmit, children, className, ...props }) => {
+export const Form = forwardRef(({ onSubmit, children, className, ...props }, ref) => {
   const [errors, setErrors] = useState({});
 
   const handleSubmit = async (event) => {
@@ -43,7 +42,7 @@ export const Form = ({ onSubmit, children, className, ...props }) => {
       {childrenWithProps}
     </form>
   );
-};
+});
 
 export const FormField = ({ label, name, children, error }) => {
   return (

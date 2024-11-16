@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import EmployeeService from '../services/EmployeeService';
 import { useRole } from '../hooks/useRole';
-import { useModal } from './modal';
 import DepartmentService from '../services/DepartmentService';
-import { Form, Card, Button, Input, Select, Table, Loading, Pagination } from '../components/ui';
+import { Modal, Form, Card, Button, Input, Select, Table, Loading, Pagination } from '../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faEdit, faTrash, faUserCircle, faEnvelope, faPhone, faBriefcase, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { formatDate } from '../utils';
@@ -17,7 +16,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [filterRole, setFilterRole] = useState('');
-  const { showModal, hideModal } = useModal();
+  const [modalState, setModalState] = useState({isOpen: false});
   
   const employeeService = useMemo(() => new EmployeeService(selectedTenant), [selectedTenant]);
   const departmentService = useMemo(() => new DepartmentService(selectedTenant), [selectedTenant]);
@@ -66,18 +65,19 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   };
 
   const handleShowModal = (data = null) => {
-    const state = data ? {
-      firstName: data.firstName ?? '',
-      lastName: data.lastName ?? '',
-      phone: data.phone ?? '',
-      email: data.email ?? '',
-      role: data.role ?? '',
-      tenantId: data.tenantId ?? '',
-      departmentId: data.departmentId ?? '',
-      position: data.position ?? '',
-      startDate: data.startDate ? formatDate(data.startDate, 'calendar') : '',
-      status: data.status ?? ''
-    } : {
+    setModalState(prev => ({...prev, isOpen: true, data, title: data ? 'Edit Employee' : 'Add New Employee'}));
+  };
+
+  const handleCloseModal = () => {
+    setModalState(prev => ({...prev, isOpen: false}));
+  };
+
+  if (!hasPermission('manage_hr')) {
+    return <div>You do not have permission to access this page.</div>;
+  }
+
+  const ModalContent = ({data = null}) => {
+    const [state, setState] = useState({
       firstName: '',
       lastName: '',
       phone: '',
@@ -88,19 +88,35 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
       position: '',
       startDate: '',
       status: 'active'
-    };
-    showModal(<ModelContent initailState={state} data={data} />,
-      {
-        title: data ? 'Edit Employee' : 'Add Employee'
-      });
-  };
+    });
 
-  if (!hasPermission('manage_hr')) {
-    return <div>You do not have permission to access this page.</div>;
-  }
-
-  const ModelContent = ({initailState, data = null}) => {
-    const [state, setState] = useState(initailState);
+    useEffect(() => {
+      const newState = data ? {
+        firstName: data.firstName ?? '',
+        lastName: data.lastName ?? '',
+        phone: data.phone ?? '',
+        email: data.email ?? '',
+        role: data.role ?? '',
+        tenantId: data.tenantId ?? '',
+        departmentId: data.departmentId ?? '',
+        position: data.position ?? '',
+        startDate: data.startDate ? formatDate(data.startDate, 'calendar') : '',
+        status: data.status ?? ''
+      } : {
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        role: '',
+        tenantId: selectedTenant,
+        departmentId: '',
+        position: '',
+        startDate: '',
+        status: 'active'
+      };
+      setState(newState);
+    }, [data])
+    
 
     const handleInputChange = (e) => {
       let { name, value, type } = e.target;
@@ -117,7 +133,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
         } else {
           await employeeService.createEmployee(state);
         }
-        hideModal();
+        handleCloseModal();
         fetchEmployees();
       } catch (error) {
         console.error('Failed to save employee:', error);
@@ -213,7 +229,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
       />
 
       <div className="flex justify-end space-x-2 mt-6">
-        <Button variant="secondary" onClick={() => hideModal()}>
+        <Button variant="secondary" onClick={handleCloseModal}>
           Cancel
         </Button>
         <Button variant="primary" type="submit">
@@ -282,7 +298,11 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
     );
   };
 
-  return (
+  return (<>
+    <Modal isOpen={modalState.isOpen} title={modalState.title} onClose={handleCloseModal} >
+      <ModalContent data={modalState.data} />
+    </Modal>
+
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
         <div className="flex space-x-4 flex-1 mr-4">
@@ -368,7 +388,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
         </>
       )}
     </div>
-  );
+  </>);
 };
 
 export default EmployeeManagement;

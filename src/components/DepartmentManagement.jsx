@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import DepartmentService from '../services/DepartmentService';
 import EmployeeService from '../services/EmployeeService';
-import { Card, Button, Input, Select, Table, Loading, Pagination } from './ui';
+import { Card, Button, Input, Select, Table, Loading, Pagination, Modal } from './ui';
 import { Form } from './ui/Form';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -11,7 +11,8 @@ import {
   faChartPie
 } from '@fortawesome/free-solid-svg-icons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { useModal } from './modal';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchDepartmentStats } from '../store/departmentSlice';
 
 const DepartmentManagement = ({ selectedTenant }) => {
   const [loading, setLoading] = useState(true);
@@ -20,11 +21,15 @@ const DepartmentManagement = ({ selectedTenant }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [departmentStats, setDepartmentStats] = useState(null);
-  const {showModal, hideModal} = useModal();
+  const [statsModalState, setStatsModalState] = useState({isOpen: false, title: 'Department Statistics'});
+  const [departmentModalState, setDepartmentModalState] = useState({isOpen: false});
 
-  const employeeService = useMemo(() =>new EmployeeService(selectedTenant), [selectedTenant]);
-  const departmentService = useMemo(() =>new DepartmentService(selectedTenant), [selectedTenant]);
+  const services = useMemo(() => {
+    return {
+      'employee': new EmployeeService(selectedTenant),
+      'department': new DepartmentService(selectedTenant)
+    };
+  }, [selectedTenant]);
 
   // Chart colors for department statistics
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -32,7 +37,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
   const fetchDepartments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await departmentService.getDepartments({ search: searchTerm, currentPage });
+      const response = await services['department'].getDepartments({ search: searchTerm, currentPage });
       setDepartments(response.data);
       setTotalPages(response.pagination.total);
     } catch (error) {
@@ -40,29 +45,19 @@ const DepartmentManagement = ({ selectedTenant }) => {
     } finally {
     setLoading(false);
     }
-  }, [departmentService, searchTerm, currentPage]);
-
-  const fetchDepartmentStats = useCallback(async () => {
-    try {
-      const response = await departmentService.getDepartmentStats();
-      setDepartmentStats(response);
-    } catch (error) {
-      console.error('Failed to fetch department stats:', error);
-    }
-  }, [departmentService]);
+  }, [services, searchTerm, currentPage]);
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const response = await employeeService.getEmployees();
+      const response = await services['employee'].getEmployees();
       setEmployees(response.data);
     } catch (error) {
       console.error('Failed to fetch employees:', error);
     }
-  }, [employeeService]);
+  }, [services]);
 
   useEffect(() => {fetchEmployees();}, [fetchEmployees]);
   useEffect(() => {fetchDepartments();}, [fetchDepartments]);
-  useEffect(() => {fetchDepartmentStats();}, [fetchDepartmentStats]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -74,17 +69,40 @@ const DepartmentManagement = ({ selectedTenant }) => {
       return;
     }
 
-    try {
-      await departmentService.deleteDepartment(departmentId);
-      fetchDepartments();
-    } catch (error) {
-      console.error('Failed to delete department:', error);
+    // try {
+    //   await services['department'].deleteDepartment(departmentId);
+    //   fetchDepartments();
+    // } catch (error) {
+    //   console.error('Failed to delete department:', error);
+    // }
+  };
+
+  const handleOpenModal = (type, data = null) => {
+    if (type === 'department') {
+      setDepartmentModalState(prev => ({...prev, isOpen: true, data, title: data ? 'Edit Department' : 'Add New Department'}));
+    } else if (type === 'stats') {
+      setStatsModalState(prev => ({...prev, isOpen: true}));
     }
   };
 
-  const handleShowModal = (type, data = null) => {
-    if (type === 'department') {
-      const state = data ? {
+  const handleCloseModal = () => {
+    setDepartmentModalState(prev => ({...prev, isOpen: false}));
+    setStatsModalState(prev => ({...prev, isOpen: false}));
+  };
+
+  const DepartmentModal = ({data}) => {
+    const [state, setState] = useState({
+      name: '',
+      description: '',
+      managerId: '',
+      parentId: '',
+      budget: '',
+      headCount: '',
+      status: 'active'
+    });
+    
+    useEffect(() => {
+      const newState = data ? {
         name: data.name ?? '',
         description: data.description ?? '',
         managerId: data.managerId ?? '',
@@ -101,15 +119,10 @@ const DepartmentManagement = ({ selectedTenant }) => {
         headCount: '',
         status: 'active'
       }
-      showModal(<DepartmentModalContent initialState={state} data={data} />);
-    } else if (type === 'stats') {
-      showModal(<StatsModalContent departmentStats={departmentStats} />);
-    }
-  };
-
-  const DepartmentModalContent = ({initialState, data = null}) => {
-    const [state, setState] = useState(initialState);
-
+      setState(newState);
+    }, [data])
+    
+  
     const handleInputChange = (e) => {
       let { name, value, type } = e.target;
       if (type === 'number') {
@@ -117,23 +130,23 @@ const DepartmentManagement = ({ selectedTenant }) => {
       }
       setState({ ...state, [name]: value });
     };
-
+  
     const handleSubmit = async (e) => {
       // e.preventDefault();
       try {
         if (data) {
-          await departmentService.updateDepartment(data.id, state);
+          await services['department'].updateDepartment(data.id, state);
         } else {
-          await departmentService.createDepartment(state);
+          await services['department'].createDepartment(state);
         }
-        hideModal();
+        handleCloseModal();
         fetchDepartments();
       } catch (error) {
         console.error('Failed to save department:', error);
       }
     };
-
-    return (<Form onSubmit={handleSubmit}>
+  
+    return (<Form onSubmit={handleSubmit} >
       <Input
         label="Department Name"
         name="name"
@@ -212,7 +225,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
       />
 
       <div className="flex justify-end space-x-2 mt-6">
-        <Button variant="secondary" onClick={() => hideModal()}>
+        <Button variant="secondary" onClick={handleCloseModal}>
           Cancel
         </Button>
         <Button variant="primary" type="submit">
@@ -222,8 +235,17 @@ const DepartmentManagement = ({ selectedTenant }) => {
     </Form>);
   };
 
-  const StatsModalContent = ({ departmentStats }) => {
-    return (<div className="space-y-6">
+  const StatsModal = memo(() => {
+    const dispatch = useDispatch();
+    const departmentStats = useSelector((state) => state.departmentStats.data[selectedTenant]);
+
+    useEffect(() => {
+      if (!departmentStats) {
+        dispatch(fetchDepartmentStats({ tenantId: selectedTenant }));
+      }
+    }, [dispatch, departmentStats]);
+    
+    return (departmentStats && <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <Card>
           <div className="text-center">
@@ -277,9 +299,16 @@ const DepartmentManagement = ({ selectedTenant }) => {
         </div>
       </div>
     </div>);
-  };
+  });
 
-  return (
+  return (<>
+    <Modal isOpen={departmentModalState.isOpen} title={departmentModalState.title} onClose={handleCloseModal}>
+      <DepartmentModal data={departmentModalState.data} />
+    </Modal>
+    <Modal isOpen={statsModalState.isOpen} title={statsModalState.title} onClose={handleCloseModal}>
+      <StatsModal />
+    </Modal>
+
     <div className="space-y-6">
       <Card>
         <div className="flex justify-between items-center mb-4">
@@ -291,12 +320,12 @@ const DepartmentManagement = ({ selectedTenant }) => {
                 onChange={handleSearchChange}
                 className="max-w-xs"
             />
-            <Button variant="secondary" onClick={() => handleShowModal('stats')}>
+            <Button variant="secondary" onClick={() => handleOpenModal('stats')}>
                 <FontAwesomeIcon icon={faChartPie} className="mr-2" />
                 View Statistics
             </Button>
             </div>
-            <Button variant="primary" onClick={() => handleShowModal('department')}>
+            <Button variant="primary" onClick={() => handleOpenModal('department')}>
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
             Add Department
             </Button>
@@ -333,7 +362,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
                 <div className="flex space-x-2">
                     <Button
                     variant="secondary"
-                    onClick={() => handleShowModal('department', dept)}
+                    onClick={() => handleOpenModal('department', dept)}
                     >
                     <FontAwesomeIcon icon={faEdit} />
                     </Button>
@@ -356,7 +385,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
         )}
       </Card>
     </div>
-  );
+  </>);
 };
 
 export default DepartmentManagement;

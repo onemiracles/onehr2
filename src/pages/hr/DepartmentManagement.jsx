@@ -1,57 +1,79 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { memo, useEffect } from 'react';
 import { default as DepartmentManagementComponent } from '../../components/DepartmentManagement';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useAuth } from '../../hooks/useAuth';
 import { Card } from '../../components/ui';
-import DepartmentService from '../../services/DepartmentService';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchDepartmentStats } from '../../store/departmentSlice';
 
 const COLORS = ['#0ea5e9', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#8b5cf6'];
 
 const DepartmentManagement = () => {
   const { user } = useAuth();
-  const departmentService = useMemo(() => new DepartmentService(user.tenantId), [user.tenantId]);
-  const [departments, setDepartments] = useState([]);
 
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const response = await departmentService.getDepartments();
-      setDepartments(response.data);
-    } catch (error) {
-      console.error('Failed to fetch departments:', error);
-    }
-  }, [departmentService]);
+  const DepartmentStatsComponent = memo(() => {
+    const dispatch = useDispatch();
+    const departmentStats = useSelector((state) => state.departmentStats.data[user.tenantId]);
 
-  useEffect(() => {fetchDepartments()}, [fetchDepartments]);
+    useEffect(() => {
+      if (!departmentStats) {
+        dispatch(fetchDepartmentStats({ tenantId: user.tenantId }));
+      }
+    }, [dispatch, departmentStats]);
 
-  const DepartmentDistributionChart = ({departments}) => {
-    const data = departments.map(dept => ({
-      name: dept.name,
-      value: dept.employees.length
+    const chartData = departmentStats?.distribution?.map(dept => ({
+      name: dept.departmentName,
+      value: dept.departmentBudget
     }));
 
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            fill="#8884d8"
-            label
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    );
-  };
+    return (departmentStats && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card className="p-6 bg-white dark:bg-gray-800">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Employee Distribution
+        </h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              fill="#8884d8"
+              label
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Card className="p-6 bg-white dark:bg-gray-800">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          Department Statistics
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-primary-50 dark:bg-primary-900 p-4 rounded-lg">
+            <p className="text-sm text-primary-600 dark:text-primary-400">Total Departments</p>
+            <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+              {departmentStats.totalDepartments}
+            </p>
+          </div>
+          <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg">
+            <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Employees</p>
+            <p className="text-2xl font-bold text-secondary-700 dark:text-secondary-300">
+              {departmentStats.totalEmployees}
+            </p>
+          </div>
+        </div>
+      </Card>
+    </div>)
+  });
 
   return (
     <div className="space-y-6">
@@ -63,34 +85,7 @@ const DepartmentManagement = () => {
 
       <DepartmentManagementComponent selectedTenant={user.tenantId} />
 
-      {departments && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Employee Distribution
-          </h3>
-          <DepartmentDistributionChart departments={departments} />
-        </Card>
-
-        <Card className="p-6 bg-white dark:bg-gray-800">
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Department Statistics
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-primary-50 dark:bg-primary-900 p-4 rounded-lg">
-              <p className="text-sm text-primary-600 dark:text-primary-400">Total Departments</p>
-              <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
-                {departments.length}
-              </p>
-            </div>
-            <div className="bg-secondary-50 dark:bg-secondary-900 p-4 rounded-lg">
-              <p className="text-sm text-secondary-600 dark:text-secondary-400">Total Employees</p>
-              <p className="text-2xl font-bold text-secondary-700 dark:text-secondary-300">
-                {departments.reduce((sum, dept) => sum + dept.employees.length, 0)}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>}
+      <DepartmentStatsComponent />
 
     </div>
   );

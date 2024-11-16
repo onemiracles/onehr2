@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useRole } from '../../hooks/useRole';
 import tenantService from '../../services/tenantService';
-import { Table, Button, Input, Select, Loading, Form } from '../../components/ui';
+import { Table, Button, Input, Select, Loading, Form, Modal } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEdit, faTrash, faPlus, faBuilding, faPeopleGroup } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
-import { useModal } from '../../components/modal';
 
 const TenantManagement = () => {
   const { hasPermission } = useRole();
   const [tenants, setTenants] = useState([]);
-  const { showModal, hideModal } = useModal();
+  const [modalState, setModalState] = useState({isOpen: false});
 
   useEffect(() => {
     fetchTenants();
@@ -27,20 +26,11 @@ const TenantManagement = () => {
   };
 
   const handleOpenModal = (data = null) => {
-    let state;
-    if (data) {
-      state = {name: data.name, industry: data.industry, employeeCount: data.employeeCount, subscriptionPlan: data.subscriptionPlan};
-    } else {
-      state = { name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' };
-    }
-    showModal(<ModalContent data={data} initalState={state} />,
-    {
-      title: data ? 'Edit Tenant' : 'Add Tenant'
-    });
+    setModalState(prev => ({...prev, isOpen: true, data, title: data ? 'Edit Tenant' : 'Add New Tenant'}));
   };
 
   const handleCloseModal = () => {
-    hideModal();
+    setModalState(prev => ({...prev, isOpen: false}));
   };
 
   const handleDelete = async (id) => {
@@ -59,8 +49,15 @@ const TenantManagement = () => {
     return <div>You do not have permission to access this page.</div>;
   }
 
-  const ModalContent = ({initalState, data = null}) => {
-    const [state, setState] = useState(initalState);
+  const ModalContent = ({data = null}) => {
+    const [state, setState] = useState({ name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' });
+
+    useEffect(() => {
+      const newState = data ? {name: data.name, industry: data.industry, employeeCount: data.employeeCount, subscriptionPlan: data.subscriptionPlan}
+        : { name: '', industry: '', employeeCount: 0, subscriptionPlan: 'Free' };
+      setState(newState);
+    }, [data])
+    
 
     const handleInputChange = (e) => {
       let { name, value, type } = e.target;
@@ -129,7 +126,11 @@ const TenantManagement = () => {
     </Form>);
   };
 
-  return (
+  return (<>
+    <Modal isOpen={modalState.isOpen} title={modalState.title} onClose={handleCloseModal}  >
+      <ModalContent data={modalState.data} />
+    </Modal>
+
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Tenant Management</h1>
@@ -167,7 +168,7 @@ const TenantManagement = () => {
         ])}
       />
     </div>
-  );
+  </>);
 };
 
 export default TenantManagement;

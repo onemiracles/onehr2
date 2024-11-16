@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRole } from '../../hooks/useRole';
-import { Card, Button, Input, Select, Table, Form, Loading, Pagination } from '../../components/ui';
+import { Card, Button, Input, Select, Table, Form, Loading, Pagination, Modal } from '../../components/ui';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { formatDate } from '../../utils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -17,7 +17,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import userService from '../../services/userService';
 import tenantService from '../../services/tenantService';
-import { useModal } from '../../components/modal';
 
 const UserManagement = () => {
   const { hasPermission } = useRole();
@@ -27,7 +26,8 @@ const UserManagement = () => {
   const [tenants, setTenants] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const {showModal, hideModal} = useModal();
+  const [userModalState, setUserModalState] = useState({isOpen: false});
+  const [passwordModalState, setPasswordModalState] = useState({isOpen: false});
 
   // Chart colors for department statistics
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -104,12 +104,38 @@ const UserManagement = () => {
   };
 
   const handleHideModal = () => {
-    hideModal();
+    setUserModalState(prev => ({...prev, isOpen: false}));
   }
 
   const handleShowModal = (type, data = null) => {
     if (type === 'user') {
-      let state = data ? {
+      setUserModalState(prev => ({...prev, isOpen: true, data, title: data ? "Edit User" : "Add New User"}));
+    } else if (type === 'password') {
+      setPasswordModalState(prev => ({...prev, isOpen: true, data: data.id, title: `Reset user "${data.firstName} ${data.lastName}" password`}));
+    }
+  }
+
+  if (!hasPermission('manage_companies')) {
+    return <div>You do not have permission to access this page.</div>;
+  }
+
+  const UserModalContent = ({data = null}) => {
+    const [state, setState] = useState({
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      role: '',
+      tenantId: '',
+      status: 'active',
+      position: '',
+      startDate: '',
+      department: ''
+    });
+    const [departments, setDepartments] = useState([]);
+
+    useEffect(() => {
+      const newState = data ? {
         firstName: data.firstName ?? '',
         lastName: data.lastName ?? '',
         email: data.email ?? '',
@@ -132,29 +158,9 @@ const UserManagement = () => {
         startDate: '',
         department: ''
       }; 
-      showModal(<UserModalContent initalState={state} data={data} />,
-        {
-            title: data ? "Edit User" : "Add New User"
-        }
-      );
-
-    } else if (type === 'password') {
-      showModal(<PasswordModalContent data={data.id}/>,
-      {
-          title: `Reset user "${data.firstName} ${data.lastName}" password`
-      }
-    );
-    }
-
-  }
-
-  if (!hasPermission('manage_companies')) {
-    return <div>You do not have permission to access this page.</div>;
-  }
-
-  const UserModalContent = ({initalState, data = null}) => {
-    const [state, setState] = useState(initalState);
-    const [departments, setDepartments] = useState([]);
+      setState(newState);
+    }, [data])
+    
 
     useEffect(() => {
       if (state.tenantId) {
@@ -327,7 +333,14 @@ const UserManagement = () => {
     </Form>);
   };
 
-  return (
+  return (<>
+    <Modal isOpen={userModalState.isOpen} title={userModalState.title} onClose={handleHideModal} >
+      <UserModalContent data={userModalState.data} />
+    </Modal>
+    <Modal isOpen={passwordModalState.isOpen} title={passwordModalState.title} onClose={handleHideModal} >
+      <PasswordModalContent data={passwordModalState.data} />
+    </Modal>
+
     <div className="space-y-6">
       <Card>
         <div className="mb-6">
@@ -538,7 +551,7 @@ const UserManagement = () => {
         </div>}
       </Card>
     </div>
-  );
+  </>);
 };
 
 export default UserManagement;
