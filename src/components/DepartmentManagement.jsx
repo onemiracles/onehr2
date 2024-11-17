@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import DepartmentService from '../services/DepartmentService';
-import EmployeeService from '../services/EmployeeService';
 import { Card, Button, Input, Select, Table, Loading, Pagination, Modal } from './ui';
 import { Form } from './ui/Form';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -13,11 +12,11 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchDepartmentStats } from '../store/departmentSlice';
+import { fetchAllEmployees } from '../store/employeeSlice';
 
 const DepartmentManagement = ({ selectedTenant }) => {
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState(null);
-  const [employees, setEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,7 +25,6 @@ const DepartmentManagement = ({ selectedTenant }) => {
 
   const services = useMemo(() => {
     return {
-      'employee': new EmployeeService(selectedTenant),
       'department': new DepartmentService(selectedTenant)
     };
   }, [selectedTenant]);
@@ -47,16 +45,6 @@ const DepartmentManagement = ({ selectedTenant }) => {
     }
   }, [services, searchTerm, currentPage]);
 
-  const fetchEmployees = useCallback(async () => {
-    try {
-      const response = await services['employee'].getEmployees();
-      setEmployees(response.data);
-    } catch (error) {
-      console.error('Failed to fetch employees:', error);
-    }
-  }, [services]);
-
-  useEffect(() => {fetchEmployees();}, [fetchEmployees]);
   useEffect(() => {fetchDepartments();}, [fetchDepartments]);
 
   const handleSearchChange = (e) => {
@@ -90,7 +78,9 @@ const DepartmentManagement = ({ selectedTenant }) => {
     setStatsModalState(prev => ({...prev, isOpen: false}));
   };
 
-  const DepartmentModal = ({data}) => {
+  const DepartmentModalContent = ({data}) => {
+    const dispatch = useDispatch();
+    const allEmployees = useSelector((state) => state.allEmployees.data[selectedTenant]);
     const [state, setState] = useState({
       name: '',
       description: '',
@@ -120,7 +110,13 @@ const DepartmentManagement = ({ selectedTenant }) => {
         status: 'active'
       }
       setState(newState);
-    }, [data])
+    }, [data]);
+    
+    useEffect(() => {
+      if (!allEmployees) {
+        dispatch(fetchAllEmployees({ tenantId: selectedTenant }));
+      }
+    }, [dispatch, allEmployees])
     
   
     const handleInputChange = (e) => {
@@ -169,7 +165,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
         onChange={handleInputChange}
         options={[
             { value: '', label: 'No Manager'},
-            ...employees ? employees.map(employee => ({
+            ...allEmployees ? allEmployees.map(employee => ({
                 value: employee.id,
                 label: `${employee.firstName} ${employee.lastName}`
             })): []
@@ -235,7 +231,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
     </Form>);
   };
 
-  const StatsModal = memo(() => {
+  const StatsModalContent = memo(() => {
     const dispatch = useDispatch();
     const departmentStats = useSelector((state) => state.departmentStats.data[selectedTenant]);
 
@@ -303,10 +299,10 @@ const DepartmentManagement = ({ selectedTenant }) => {
 
   return (<>
     <Modal isOpen={departmentModalState.isOpen} title={departmentModalState.title} onClose={handleCloseModal}>
-      <DepartmentModal data={departmentModalState.data} />
+      <DepartmentModalContent data={departmentModalState.data} />
     </Modal>
     <Modal isOpen={statsModalState.isOpen} title={statsModalState.title} onClose={handleCloseModal}>
-      <StatsModal />
+      <StatsModalContent />
     </Modal>
 
     <div className="space-y-6">

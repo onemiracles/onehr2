@@ -19,6 +19,23 @@ export const fetchEmployees = createAsyncThunk(
   }
 );
 
+export const fetchAllEmployees = createAsyncThunk(
+  'employees/fetchAllEmployees',
+  async ({ tenantId }, thunkAPI) => {
+    const employeeService = new EmployeeService(tenantId);
+    try {
+      const response = await employeeService.getAllEmployees();
+      const { data } = response;
+      return {
+        tenantId,
+        data
+      };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
 const employeeSlice = createSlice({
   name: 'employees',
   initialState: {
@@ -45,4 +62,29 @@ const employeeSlice = createSlice({
   },
 });
 
-export default employeeSlice.reducer;
+const allEmployeeSlice = createSlice({
+  name: 'allEmployees',
+  initialState: {
+    data: {},
+    status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+    error: null,
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchAllEmployees.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchAllEmployees.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.data[action.payload.tenantId] = action.payload.data;
+      })
+      .addCase(fetchAllEmployees.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      });
+  },
+});
+
+export const employeeReducer = employeeSlice.reducer;
+export const allEmployeeReducer = allEmployeeSlice.reducer;

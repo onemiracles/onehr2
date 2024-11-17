@@ -1,17 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import EmployeeService from '../services/EmployeeService';
 import { useRole } from '../hooks/useRole';
-import DepartmentService from '../services/DepartmentService';
 import { Modal, Form, Card, Button, Input, Select, Table, Loading, Pagination } from '../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserPlus, faEdit, faTrash, faUserCircle, faEnvelope, faPhone, faBriefcase, faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { formatDate } from '../utils';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllDepartment } from '../store/departmentSlice';
 
 const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   const { hasPermission } = useRole();
   const [loading, setLoading] = useState(true);
   const [employees, setEmployees] = useState(null);
-  const [departments, setDepartments] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -19,7 +19,6 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   const [modalState, setModalState] = useState({isOpen: false});
   
   const employeeService = useMemo(() => new EmployeeService(selectedTenant), [selectedTenant]);
-  const departmentService = useMemo(() => new DepartmentService(selectedTenant), [selectedTenant]);
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -34,17 +33,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
     }
   }, [employeeService, currentPage, searchTerm, filterRole]);
 
-  const fetchDepartments = useCallback(async () => {
-    try {
-      const response = await departmentService.getDepartments();
-      setDepartments(response.data);
-    } catch (error) {
-      console.error('Failed to fetch departments:', error);
-    }
-  }, [departmentService]);
-
   useEffect(() => {fetchEmployees();}, [fetchEmployees]);
-  useEffect(() => {fetchDepartments();}, [fetchDepartments]);  
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
@@ -77,6 +66,8 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   }
 
   const ModalContent = ({data = null}) => {
+    const dispatch = useDispatch();
+    const allDepartment = useSelector((state) => state.allDepartment.data[selectedTenant]);
     const [state, setState] = useState({
       firstName: '',
       lastName: '',
@@ -89,6 +80,13 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
       startDate: '',
       status: 'active'
     });
+
+    useEffect(() => {
+      if (!allDepartment) {
+        dispatch(fetchAllDepartment({ tenantId: selectedTenant }));
+      }
+    }, [dispatch, allDepartment])
+    
 
     useEffect(() => {
       const newState = data ? {
@@ -195,7 +193,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
         onChange={handleInputChange}
         options={[
             { value: '', label: 'No Department' },
-            ...(departments ? departments.map((e) => {
+            ...(allDepartment ? allDepartment.map((e) => {
                 return { value: e.id, label: e.name }
             }) : [])
         ]}

@@ -38,6 +38,17 @@ class EmployeeService {
     }
   }
 
+  async getAllEmployees(params = {}) {
+    try {
+      const response = await this.api.get('/all', {
+        params: params
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getEmployeeById(id) {
     try {
       const response = await this.api.get(`/${id}`);
