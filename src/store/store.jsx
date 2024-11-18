@@ -1,15 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
-import modalReducer from './modalSlice';
-import {employeeReducer, allEmployeeReducer} from './employeeSlice';
-import {departmentStatsReducer, allDepartmentReducer} from './departmentSlice';
+import employeeReducer from './employeeSlice';
+import departmentReducer from './departmentSlice';
+import payrollReducer from './payrollSlice';
 
 const store = configureStore({
   reducer: {
-    modals: modalReducer,
     employees: employeeReducer,
-    allEmployees: allEmployeeReducer,
-    departmentStats: departmentStatsReducer,
-    allDepartment: allDepartmentReducer
+    departments: departmentReducer,
+    payrolls: payrollReducer
   },
 });
 

@@ -13,7 +13,7 @@ const DepartmentManagement = () => {
 
   const DepartmentStatsComponent = memo(() => {
     const dispatch = useDispatch();
-    const departmentStats = useSelector((state) => state.departmentStats.data[user.tenantId]);
+    const departmentStats = useSelector((state) => state.departments[user.tenantId]?.departmentStats);
 
     useEffect(() => {
       if (!departmentStats) {

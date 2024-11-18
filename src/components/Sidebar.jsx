@@ -12,7 +12,8 @@ import {
   faTasks, 
   faBuilding,
   faComputer,
-  faStar
+  faStar,
+  faCalendarXmark
 } from '@fortawesome/free-solid-svg-icons';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -23,6 +24,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Dashboard', icon: faHome, path: '/', permission: null },
     { name: 'Employees', icon: faUsers, path: '/hr/employees', permission: 'manage_hr' },
     { name: 'Departments', icon: faComputer, path: '/hr/departments', permission: 'manage_hr' },
+    { name: 'Leave Requests', icon: faCalendarXmark, path: '/hr/leave-requests', permission: 'manage_hr' },
     { name: 'Payroll', icon: faMoneyBillWave, path: '/hr/payroll', permission: 'manage_hr' },
     { name: 'Recruitment', icon: faUserPlus, path: '/hr/recruitment', permission: 'manage_hr' },
     { name: 'Performance Reviews', icon: faChartLine, path: '/hr/performance-reviews', permission: 'manage_hr' },

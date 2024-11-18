@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import { Card, Button, Input, Select, Loading, Modal, Table, Progress } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -15,27 +16,28 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPayrollStats } from '../../store/payrollSlice';
 
 const PayrollManagement = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [payrollData, setPayrollData] = useState(null);
   const [currentPayPeriod, setCurrentPayPeriod] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [payrollHistory, setPayrollHistory] = useState([]);
-  const [payrollStats, setPayrollStats] = useState(null);
+  const [payrollData, setPayrollData] = useState(null);
 
   useEffect(() => {
-    fetchPayrollData();
     fetchPayrollHistory();
-    fetchPayrollStats();
+    fetchPayrollData();
   }, []);
 
   const fetchPayrollData = async () => {
     setLoading(true);
     try {
-      // Simulate API call
+      //TODO: Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       const mockPayrollData = {
         employees: [
@@ -102,27 +104,6 @@ const PayrollManagement = () => {
     }
   };
 
-  const fetchPayrollStats = async () => {
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const mockStats = {
-        monthlyTrend: [
-          { month: 'Jan', amount: 820000 },
-          { month: 'Feb', amount: 845000 },
-          { month: 'Mar', amount: 850000 },
-          { month: 'Apr', amount: 855000 },
-        ],
-        averageSalary: 85000,
-        totalBenefits: 180000,
-        totalTaxes: 255000
-      };
-      setPayrollStats(mockStats);
-    } catch (error) {
-      console.error('Error fetching payroll stats:', error);
-    }
-  };
-
   const handleProcessPayroll = async () => {
     setIsProcessing(true);
     try {
@@ -175,34 +156,18 @@ const PayrollManagement = () => {
     return <Loading />;
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Payroll Management
-        </h2>
-        <div className="flex space-x-4">
-          <Select
-            value={currentPayPeriod}
-            onChange={(e) => setCurrentPayPeriod(e.target.value)}
-            className="w-48"
-          >
-            <option value="March 2024">March 2024</option>
-            <option value="February 2024">February 2024</option>
-          </Select>
-          <Link to="/hr/payroll-process">
-            <Button 
-              variant="primary" 
-              onClick={handleProcessPayroll}
-              disabled={isProcessing || payrollData.pendingCount === 0}
-            >
-              <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
-              Process Payroll
-            </Button>
-          </Link>
-        </div>
-      </div>
+  const PayrollStatsComponent = memo(() => {
+    const dispatch = useDispatch();
+    const payrollStats = useSelector((state) => state.payrolls[user.tenantId]?.payrollStats);
 
+    useEffect(() => {
+      if (!payrollStats) {
+        dispatch(fetchPayrollStats({tenantId: user.tenantId}));
+      }
+    }, [dispatch, payrollStats]);
+    
+
+    return ((payrollStats && payrollData) ? <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <PayrollSummaryCard
           title="Total Payroll"
@@ -250,6 +215,36 @@ const PayrollManagement = () => {
           </ResponsiveContainer>
         </div>
       </Card>
+    </> : <Loading />);
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Payroll Management
+        </h2>
+        <div className="flex space-x-4">
+          <Select
+            value={currentPayPeriod}
+            onChange={(e) => setCurrentPayPeriod(e.target.value)}
+            className="w-48"
+          >
+            <option value="March 2024">March 2024</option>
+            <option value="February 2024">February 2024</option>
+          </Select>
+          <Link to="/hr/payroll-process">
+            <Button 
+              variant="primary" 
+              onClick={handleProcessPayroll}
+              disabled={isProcessing || payrollData.pendingCount === 0}
+            >
+              <FontAwesomeIcon icon={faMoneyBillWave} className="mr-2" />
+              Process Payroll
+            </Button>
+          </Link>
+        </div>
+      </div>
 
       <Card className="bg-white dark:bg-gray-800">
         <Table
@@ -279,6 +274,8 @@ const PayrollManagement = () => {
           ])}
         />
       </Card>
+
+      <PayrollStatsComponent />
 
       <Modal
         isOpen={isModalOpen}

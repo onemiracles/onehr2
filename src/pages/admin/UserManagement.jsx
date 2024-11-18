@@ -22,7 +22,6 @@ const UserManagement = () => {
   const { hasPermission } = useRole();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState(null);
-  const [stats, userStats] = useState({});
   const [tenants, setTenants] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,11 +57,6 @@ const UserManagement = () => {
     }
   }, [currentPage, filters]);
 
-  const fetchUserStats = useCallback(async () => {
-    const response = await userService.getStats()
-    userStats(response);
-  }, []);
-
   const fetchTenants = useCallback(async () => {
     try {
       const response = await tenantService.getTenants();
@@ -73,7 +67,6 @@ const UserManagement = () => {
   }, []);
 
   useEffect(() => {fetchUsers();}, [fetchUsers]);
-  useEffect(() => {fetchUserStats();}, [fetchUserStats]);
   useEffect(() => {fetchTenants();}, [fetchTenants]);
 
   const handleFilterChange = (name, value) => {
@@ -333,6 +326,88 @@ const UserManagement = () => {
     </Form>);
   };
 
+  const UserStateComponent = () => {
+    const [stats, userStats] = useState({});
+
+    const fetchUserStats = useCallback(async () => {
+      const response = await userService.getStats()
+      userStats(response);
+    }, []);
+
+    useEffect(() => {fetchUserStats();}, [fetchUserStats]);
+
+    const infos = [
+      {
+        title: 'Total Users',
+        icon: <FontAwesomeIcon icon={faUsers} className="h-6 w-6 text-primary-600" />,
+        data: stats?.totalUsers || 0
+      },
+      {
+        title: 'Active Users',
+        icon: <FontAwesomeIcon icon={faCheckCircle} className="h-6 w-6 text-green-600" />,
+        data: stats?.activeUsers || 0
+      },
+      {
+        title: 'Recent Logins',
+        icon: <FontAwesomeIcon icon={faClock} className="h-6 w-6 text-yellow-600" />,
+        data: stats?.recentLogins || 0
+      },
+      {
+        title: 'Suspended Users',
+        icon: <FontAwesomeIcon icon={faLock} className="h-6 w-6 text-red-600" />,
+        data: stats?.suspendedUsers || 0
+      }
+    ];
+
+    const InfoCard = ({title, icon, data}) => {
+      return (<Card className="shadow">
+        <div className="flex items-center">
+          <div className="flex-shrink-0 bg-primary-100 rounded-full p-3">
+            {icon}
+          </div>
+          <div className="ml-4">
+            <h3 className="text-sm font-medium text-gray-500">{title}</h3>
+            <p className="text-lg font-semibold text-gray-900">{data}</p>
+          </div>
+        </div>
+      </Card>);
+    };
+    
+    return (<Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {infos.map(({title, icon, data}) => (
+          <InfoCard title={title} icon={icon} data={data} />
+        ))}
+      </div>
+
+      {/* Department Distribution Chart */}
+      {stats?.departmentDistribution && <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Department Distribution</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={stats.departmentDistribution}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#8884d8"
+              >
+                {stats.departmentDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>}
+    </Card>);
+  };
+
   return (<>
     <Modal isOpen={userModalState.isOpen} title={userModalState.title} onClose={handleHideModal} >
       <UserModalContent data={userModalState.data} />
@@ -416,7 +491,9 @@ const UserManagement = () => {
               data={users.map((user) => [
                 <div>
                   <div className="font-medium">{`${user.firstName} ${user.lastName}`}</div>
-                  <div className="text-sm text-gray-500">{user.email}</div>
+                  {user.phone ? <div className="text-sm text-gray-500">{user.phone}</div> : <></>}
+                  {user.email ? <div className="text-sm text-gray-500">{user.email}</div> : <></>}
+                  
                 </div>,
                 user.role,
                 user.tenant?.name || 'N/A',
@@ -472,84 +549,8 @@ const UserManagement = () => {
         )}
       </Card>
 
-      {/* User Stats Card */}
-      <Card>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-primary-100 rounded-full p-3">
-                <FontAwesomeIcon icon={faUsers} className="h-6 w-6 text-primary-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
-                <p className="text-lg font-semibold text-gray-900">{stats?.totalUsers || 0}</p>
-              </div>
-            </div>
-          </div>
+      <UserStateComponent />
 
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-green-100 rounded-full p-3">
-                <FontAwesomeIcon icon={faCheckCircle} className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
-                <p className="text-lg font-semibold text-gray-900">{stats?.activeUsers || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-yellow-100 rounded-full p-3">
-                <FontAwesomeIcon icon={faClock} className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500">Recent Logins</h3>
-                <p className="text-lg font-semibold text-gray-900">{stats?.recentLogins || 0}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-4">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-red-100 rounded-full p-3">
-                <FontAwesomeIcon icon={faLock} className="h-6 w-6 text-red-600" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-500">Suspended Users</h3>
-                <p className="text-lg font-semibold text-gray-900">{stats?.suspendedUsers || 0}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Department Distribution Chart */}
-        {stats?.departmentDistribution && <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Department Distribution</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={stats.departmentDistribution}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                >
-                  {stats.departmentDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>}
-      </Card>
     </div>
   </>);
 };

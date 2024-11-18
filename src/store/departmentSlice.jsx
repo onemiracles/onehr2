@@ -1,22 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import DepartmentService from '../services/DepartmentService';
 
-export const fetchDepartmentStats = createAsyncThunk(
-  'departments/fetchDepartmentStats',
-  async ({ tenantId }, thunkAPI) => {
-    const departmentService = new DepartmentService(tenantId);
-    try {
-      const response = await departmentService.getDepartmentStats();
-      return {
-        tenantId,
-        data: response
-      };
-    } catch (error) {
-      return thunkAPI.rejectWithValue(error.message);
-    }
-  }
-);
-
 export const fetchAllDepartment = createAsyncThunk(
   'departments/fetchAllDepartment',
   async ({ tenantId }, thunkAPI) => {
@@ -24,8 +8,9 @@ export const fetchAllDepartment = createAsyncThunk(
     try {
       const response = await departmentService.getAllDepartments();
       return {
+        name: 'allDepartments',
         tenantId,
-        data: response.data
+        response
       };
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message);
@@ -33,53 +18,59 @@ export const fetchAllDepartment = createAsyncThunk(
   }
 );
 
-const departmentStatsSlice = createSlice({
-  name: 'departmentStats',
+export const fetchDepartmentStats = createAsyncThunk(
+  'departments/fetchDepartmentStats',
+  async ({ tenantId }, thunkAPI) => {
+    const departmentService = new DepartmentService(tenantId);
+    try {
+      const response = await departmentService.getDepartmentStats();
+      return {
+        name: 'departmentStats',
+        tenantId,
+        response
+      };
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+const departmentSlice = createSlice({
+  name: 'departments',
   initialState: {
-    data: {},
     status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
-    builder
-      .addCase(fetchDepartmentStats.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchDepartmentStats.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.data[action.payload.tenantId] = action.payload.data;
-      })
-      .addCase(fetchDepartmentStats.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      });
+    [fetchAllDepartment, fetchDepartmentStats].forEach((e) => {
+      builder
+        .addCase(e.pending, (state) => {
+          state.status = 'loading';
+        })
+        .addCase(e.fulfilled, (state, action) => {
+          const {tenantId, name, response} = action.payload;
+          if (!state[tenantId]) {
+            state[tenantId] = {};
+          }
+          if (!state[tenantId][name]) {
+            state[tenantId][name] = {};
+          }
+          state[tenantId][name] = response;
+          state.status = 'succeeded';
+        })
+        .addCase(e.rejected, (state, action) => {
+          const {tenantId, name, error} = action.payload;
+          if (!state[tenantId]) {
+            state[tenantId] = {};
+          }
+          if (!state[tenantId][name]) {
+            state[tenantId][name] = {};
+          }
+          state.status = 'failed';
+          state[tenantId][name].error = error;
+        });
+    });
   },
 });
 
-const allDepartmentSlice = createSlice({
-  name: 'allDepartment',
-  initialState: {
-    data: {},
-    status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null,
-  },
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(fetchAllDepartment.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(fetchAllDepartment.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.data[action.payload.tenantId] = action.payload.data;
-      })
-      .addCase(fetchAllDepartment.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.payload;
-      });
-  },
-});
-
-export const departmentStatsReducer = departmentStatsSlice.reducer;
-export const allDepartmentReducer = allDepartmentSlice.reducer;
+export default departmentSlice.reducer;

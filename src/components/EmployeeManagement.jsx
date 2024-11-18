@@ -7,6 +7,7 @@ import { faUserPlus, faEdit, faTrash, faUserCircle, faEnvelope, faPhone, faBrief
 import { formatDate } from '../utils';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchAllDepartment } from '../store/departmentSlice';
+import { fetchAllEmployees } from '../store/employeeSlice';
 
 const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
   const { hasPermission } = useRole();
@@ -67,7 +68,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
 
   const ModalContent = ({data = null}) => {
     const dispatch = useDispatch();
-    const allDepartment = useSelector((state) => state.allDepartment.data[selectedTenant]);
+    const allDepartment = useSelector((state) => state.departments[selectedTenant]?.allDepartment?.data);
     const [state, setState] = useState({
       firstName: '',
       lastName: '',
@@ -133,6 +134,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
         }
         handleCloseModal();
         fetchEmployees();
+        dispatch(fetchAllEmployees({ tenantId: selectedTenant }));
       } catch (error) {
         console.error('Failed to save employee:', error);
       }
@@ -152,7 +154,6 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
           name="lastName"
           value={state.lastName}
           onChange={handleInputChange}
-          required
         />
       </div>
       

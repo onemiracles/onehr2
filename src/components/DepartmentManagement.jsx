@@ -11,7 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchDepartmentStats } from '../store/departmentSlice';
+import { fetchAllDepartment, fetchDepartmentStats } from '../store/departmentSlice';
 import { fetchAllEmployees } from '../store/employeeSlice';
 
 const DepartmentManagement = ({ selectedTenant }) => {
@@ -80,7 +80,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
 
   const DepartmentModalContent = ({data}) => {
     const dispatch = useDispatch();
-    const allEmployees = useSelector((state) => state.allEmployees.data[selectedTenant]);
+    const allEmployees = useSelector((state) => state.employees[selectedTenant]?.allEmployees?.data);
     const [state, setState] = useState({
       name: '',
       description: '',
@@ -137,6 +137,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
         }
         handleCloseModal();
         fetchDepartments();
+        dispatch(fetchAllDepartment({ tenantId: selectedTenant }));
       } catch (error) {
         console.error('Failed to save department:', error);
       }
@@ -233,7 +234,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
 
   const StatsModalContent = memo(() => {
     const dispatch = useDispatch();
-    const departmentStats = useSelector((state) => state.departmentStats.data[selectedTenant]);
+    const departmentStats = useSelector((state) => state.departments[selectedTenant]?.departmentStats);
 
     useEffect(() => {
       if (!departmentStats) {
