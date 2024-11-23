@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, Button, Input, Select, Loading, Modal, Table, Progress } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faCalendarAlt,
   faCheck,
   faTimes,
   faHourglass,
@@ -10,25 +9,29 @@ import {
   faCalendarPlus,
   faCalendarCheck,
   faCalendarTimes,
-  faFilter,
-  faComments,
-  faHistory,
-  faCalendarWeek,
-  faExclamationCircle,
   faFileAlt,
-  faEye
+  faEye,
+  faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import LeaveRequestService from '../../services/LeaveRequestService';
+import { useAuth } from '../../hooks/useAuth';
+import { formatDate } from '../../utils';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllEmployees } from '../../store/employeeSlice';
 
 const LeaveRequests = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState([]);
+  const [pagination, setPagination] = useState({page: 1});
   const [currentView, setCurrentView] = useState('overview');
   const [leaveBalance, setLeaveBalance] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
+  const [leaveModalState, setLeaveModalState] = useState({isOpen: false});
+  const [detailModalState, setDetailModalState] = useState({isOpen: false, title: 'View Leave Request'});
   const [leaveStats, setLeaveStats] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const leaveRequestService = useMemo(() => new LeaveRequestService(user.tenantId), [user.tenantId]);
 
   useEffect(() => {
     fetchLeaveData();
@@ -50,33 +53,42 @@ const LeaveRequests = () => {
   };
 
   const fetchLeaveRequests = async () => {
+    setLoading(true);
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const mockLeaveRequests = [
-      {
-        id: 1,
-        employeeName: 'John Doe',
-        type: 'Vacation',
-        startDate: '2024-04-01',
-        endDate: '2024-04-05',
-        status: 'pending',
-        totalDays: 5,
-        reason: 'Annual family vacation',
-        appliedDate: '2024-03-20',
-      },
-      {
-        id: 2,
-        employeeName: 'Jane Smith',
-        type: 'Sick Leave',
-        startDate: '2024-03-25',
-        endDate: '2024-03-26',
-        status: 'approved',
-        totalDays: 2,
-        reason: 'Medical appointment',
-        appliedDate: '2024-03-18',
-      },
-    ];
-    setLeaveRequests(mockLeaveRequests);
+    // await new Promise(resolve => setTimeout(resolve, 1000));
+    // const mockLeaveRequests = [
+    //   {
+    //     id: 1,
+    //     employeeName: 'John Doe',
+    //     type: 'Vacation',
+    //     startDate: '2024-04-01',
+    //     endDate: '2024-04-05',
+    //     status: 'pending',
+    //     totalDays: 5,
+    //     reason: 'Annual family vacation',
+    //     appliedDate: '2024-03-20',
+    //   },
+    //   {
+    //     id: 2,
+    //     employeeName: 'Jane Smith',
+    //     type: 'Sick Leave',
+    //     startDate: '2024-03-25',
+    //     endDate: '2024-03-26',
+    //     status: 'approved',
+    //     totalDays: 2,
+    //     reason: 'Medical appointment',
+    //     appliedDate: '2024-03-18',
+    //   },
+    // ];
+    try {
+      const response = await leaveRequestService.getLeaveRequests();
+      setLeaveRequests(response.data);
+      setPagination(response.pagination);
+    } catch (error) {
+      console.error('Error fetching leave requests', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchLeaveBalance = async () => {
@@ -108,9 +120,17 @@ const LeaveRequests = () => {
     setLeaveStats(mockStats);
   };
 
-  const handleNewRequest = () => {
-    setModalContent('newRequest');
-    setIsModalOpen(true);
+  const handleOpenLeaveModal = (data = null) => {
+    setLeaveModalState(prev => ({...prev, isOpen: true, data, title: data ? 'Edit Leave Request' : 'New Leave Request'}));
+  };
+
+  const handleOpenDetailModal = (data) => {
+    setDetailModalState(prev => ({...prev, isOpen: true, data}));
+  };
+
+  const handleCloseModal = () => {
+    setLeaveModalState(prev => ({...prev, isOpen: false}));
+    setDetailModalState(prev => ({...prev, isOpen: false}));
   };
 
   const handleApproveRequest = async (requestId) => {
@@ -119,6 +139,19 @@ const LeaveRequests = () => {
 
   const handleRejectRequest = async (requestId) => {
     // Handle rejection logic
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this leave request?')) {
+      return;
+    }
+
+    try {
+      await leaveRequestService.deleteLeaveRequest(id);
+      fetchLeaveRequests();
+    } catch (error) {
+      console.error('Failed to delete leave request:', error);
+    }
   };
 
   const LeaveOverview = () => (
@@ -259,20 +292,50 @@ const LeaveRequests = () => {
     </div>
   );
 
-  const LeaveRequestForm = ({ onClose }) => {
-    const [formData, setFormData] = useState({
+  const LeaveRequestForm = ({ data = null}) => {
+    const initialState = data ? {
+      type: data.type,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      employeeId: data.employeeId,
+      reason: data.reason,
+      attachment: null,
+    } : {
       type: '',
       startDate: '',
       endDate: '',
       reason: '',
+      employeeId: '',
       attachment: null,
-    });
+    }
+    const dispatch = useDispatch();
+    const [formData, setFormData] = useState(initialState);
+    const allEmployees = useSelector((state) => state.employees[user.tenantId]?.allEmployees?.data);
+
+    useEffect(() => {
+      if (!allEmployees) {
+        dispatch(fetchAllEmployees({ tenantId: user.tenantId }));
+      }
+    }, [dispatch, allEmployees])
+    
+    const handleChange = async (e) => {
+      let { name, value, type } = e.target;
+      if (type === 'number') {
+        value = Number(value);
+      }
+      setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSubmit = async (e) => {
       e.preventDefault();
       try {
-        // Handle leave request submission
-        onClose();
+        if (data) {
+          await leaveRequestService.updateLeaveRequest(data.id, formData);
+        } else {
+          await leaveRequestService.createLeaveRequest(formData);
+        }
+        handleCloseModal();
+        fetchLeaveRequests();
       } catch (error) {
         console.error('Error submitting leave request:', error);
       }
@@ -281,10 +344,23 @@ const LeaveRequests = () => {
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         <Select
+          label="Employee"
+          name="employeeId"
+          value={formData.employeeId}
+          onChange={handleChange}
+          required
+        >
+          <option value="">--Select Leave Employee--</option>
+          {allEmployees?.map((emp) => {
+            return (<option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName ?? ''}</option>);
+          })}
+        </Select>
+
+        <Select
           label="Leave Type"
           name="type"
           value={formData.type}
-          onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+          onChange={handleChange}
           required
         >
           <option value="">Select Leave Type</option>
@@ -300,7 +376,7 @@ const LeaveRequests = () => {
             name="startDate"
             type="date"
             value={formData.startDate}
-            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            onChange={handleChange}
             required
           />
           <Input
@@ -308,7 +384,7 @@ const LeaveRequests = () => {
             name="endDate"
             type="date"
             value={formData.endDate}
-            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            onChange={handleChange}
             required
           />
         </div>
@@ -318,7 +394,7 @@ const LeaveRequests = () => {
           name="reason"
           type="textarea"
           value={formData.reason}
-          onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+          onChange={handleChange}
           required
           rows={3}
         />
@@ -327,11 +403,11 @@ const LeaveRequests = () => {
           label="Attachment (optional)"
           name="attachment"
           type="file"
-          onChange={(e) => setFormData({ ...formData, attachment: e.target.files[0] })}
+          onChange={handleChange}
         />
 
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
+          <Button type="button" variant="secondary" onClick={handleCloseModal}>
             Cancel
           </Button>
           <Button type="submit" variant="primary">
@@ -346,13 +422,20 @@ const LeaveRequests = () => {
     return <Loading />;
   }
 
-  return (
+  return (<>
+    <Modal isOpen={leaveModalState.isOpen} onClose={handleCloseModal} title={leaveModalState.title} >
+      <LeaveRequestForm data={leaveModalState.data} onClose={handleCloseModal} />
+    </Modal>
+    <Modal isOpen={detailModalState.isOpen} onClose={handleCloseModal} title={detailModalState.title} >
+      <LeaveRequestDetails request={detailModalState.data} onClose={handleCloseModal} />
+    </Modal>
+
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Leave Management
         </h2>
-        <Button variant="primary" onClick={handleNewRequest}>
+        <Button variant="primary" onClick={() => handleOpenLeaveModal()}>
           <FontAwesomeIcon icon={faCalendarPlus} className="mr-2" />
           New Leave Request
         </Button>
@@ -383,16 +466,16 @@ const LeaveRequests = () => {
               .map(request => [
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {request.employeeName}
+                    {request.employee.firstName} {request.employee.lastName ?? ''}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Applied: {request.appliedDate}
+                    Applied: {formatDate(request.createdAt)}
                   </p>
                 </div>,
                 request.type,
                 <div>
                   <p className="text-gray-900 dark:text-white">
-                    {request.startDate} - {request.endDate}
+                    {formatDate(request.startDate)} - {formatDate(request.endDate)}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     {request.totalDays} days
@@ -410,16 +493,15 @@ const LeaveRequests = () => {
                 <div className="flex space-x-2">
                   <Button
                     variant="secondary"
-                    onClick={() => {
-                      setModalContent({ type: 'viewRequest', data: request });
-                      setIsModalOpen(true);
-                    }}
+                    onClick={() => handleOpenDetailModal(request)}
                     className="text-sm"
                   >
                     <FontAwesomeIcon icon={faEye} />
                     View
                   </Button>
-                  {request.status === 'pending' && <><Button
+
+                  {request.status === 'pending' && <>
+                  <Button
                     variant="success"
                     onClick={() => handleApproveRequest(request.id)}
                     className="text-sm"
@@ -434,29 +516,25 @@ const LeaveRequests = () => {
                   >
                     <FontAwesomeIcon icon={faTimes} className="mr-1" />
                     Reject
-                  </Button></>}
+                  </Button>
+                  </>}
+                  
+                  <Button
+                    variant="danger"
+                    onClick={() => handleDelete(request.id)}
+                    title="Delete User"
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </Button>
                 </div>
               ])}
           />
         </div>
       </Card>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalContent === 'newRequest' ? 'New Leave Request' : 'Leave Request Details'}
-      >
-        {modalContent === 'newRequest' ? (
-          <LeaveRequestForm onClose={() => setIsModalOpen(false)} />
-        ) : modalContent?.type === 'viewRequest' ? (
-          <LeaveRequestDetails 
-            request={modalContent.data} 
-            onClose={() => setIsModalOpen(false)}
-          />
-        ) : null}
-      </Modal>
+      {/* <LeaveOverview /> */}
     </div>
-  );
+  </>);
 };
 
 const LeaveRequestDetails = ({ request, onClose }) => {
@@ -467,7 +545,7 @@ const LeaveRequestDetails = ({ request, onClose }) => {
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
             Employee
           </label>
-          <p className="text-gray-900 dark:text-white">{request.employeeName}</p>
+          <p className="text-gray-900 dark:text-white">{request.employee.firstName} {request.employee.lastName ?? ''}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -479,13 +557,13 @@ const LeaveRequestDetails = ({ request, onClose }) => {
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
             Start Date
           </label>
-          <p className="text-gray-900 dark:text-white">{request.startDate}</p>
+          <p className="text-gray-900 dark:text-white">{formatDate(request.startDate)}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
             End Date
           </label>
-          <p className="text-gray-900 dark:text-white">{request.endDate}</p>
+          <p className="text-gray-900 dark:text-white">{formatDate(request.endDate)}</p>
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -538,7 +616,7 @@ const LeaveRequestDetails = ({ request, onClose }) => {
           <div className="flex items-center text-sm">
             <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
             <span className="text-gray-600 dark:text-gray-300">
-              Request submitted on {request.appliedDate}
+              Request submitted on {formatDate(request.createdAt)}
             </span>
           </div>
           {request.status !== 'pending' && (

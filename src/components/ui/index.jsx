@@ -9,7 +9,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 export const Button = forwardRef(({ children, className, variant = 'primary', size = 'medium', ...props }, ref) => {
-  const baseClasses = 'font-bold rounded focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200';
+  const baseClasses = 'font-bold rounded focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-200 whitespace-nowrap overflow-hidden text-ellipsis';
   const variantClasses = {
     primary: 'bg-primary-600 hover:bg-primary-700 text-white focus:ring-primary-500',
     secondary: 'bg-secondary-600 hover:bg-secondary-700 text-white focus:ring-secondary-500',
@@ -526,3 +526,4 @@ export { Loading, Spinner } from './Loading';
 export { Form } from './Form';
 export { Table } from './Table';
 export { Modal } from './Modal';
+export { ActionButtons } from './ActionButtons';

@@ -5,11 +5,17 @@ import { useAuth } from '../../hooks/useAuth';
 import { Card } from '../../components/ui';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchDepartmentStats } from '../../store/departmentSlice';
+import { useRole } from '../../hooks/useRole';
 
 const COLORS = ['#0ea5e9', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#8b5cf6'];
 
 const DepartmentManagement = () => {
   const { user } = useAuth();
+  const { hasPermission } = useRole();
+  
+  if (!hasPermission('manage_hr')) {
+    return <div>You do not have permission to access this page.</div>;
+  }
 
   const DepartmentStatsComponent = memo(() => {
     const dispatch = useDispatch();

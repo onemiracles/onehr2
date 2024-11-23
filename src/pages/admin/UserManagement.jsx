@@ -87,7 +87,7 @@ const UserManagement = () => {
     }
   };
 
-  const toggleUserStatus = async (user) => {
+  const toggleStatus = async (user) => {
     try {
       await userService.updateStatus(user.id, user.status === 'active' ? 'inactive' : 'active');
       fetchUsers();
@@ -98,6 +98,7 @@ const UserManagement = () => {
 
   const handleHideModal = () => {
     setUserModalState(prev => ({...prev, isOpen: false}));
+    setPasswordModalState(prev => ({...prev, isOpen: false}));
   }
 
   const handleShowModal = (type, data = null) => {
@@ -118,7 +119,7 @@ const UserManagement = () => {
       lastName: '',
       email: '',
       phone: '',
-      role: '',
+      role: 'SUPER_ADMIN',
       tenantId: '',
       status: 'active',
       position: '',
@@ -144,7 +145,7 @@ const UserManagement = () => {
         lastName: '',
         email: '',
         phone: '',
-        role: '',
+        role: 'SUPER_ADMIN',
         tenantId: '',
         status: 'active',
         position: '',
@@ -375,8 +376,8 @@ const UserManagement = () => {
     
     return (<Card>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {infos.map(({title, icon, data}) => (
-          <InfoCard title={title} icon={icon} data={data} />
+        {infos.map(({title, icon, data}, index) => (
+          <InfoCard key={index} title={title} icon={icon} data={data} />
         ))}
       </div>
 
@@ -490,7 +491,7 @@ const UserManagement = () => {
               ]}
               data={users.map((user) => [
                 <div>
-                  <div className="font-medium">{`${user.firstName} ${user.lastName}`}</div>
+                  <div className="font-medium">{`${user.firstName} ${user.lastName ?? ''}`}</div>
                   {user.phone ? <div className="text-sm text-gray-500">{user.phone}</div> : <></>}
                   {user.email ? <div className="text-sm text-gray-500">{user.email}</div> : <></>}
                   
@@ -517,7 +518,7 @@ const UserManagement = () => {
                   </Button>
                   <Button
                     variant="secondary"
-                    onClick={() => toggleUserStatus(user)}
+                    onClick={() => toggleStatus(user)}
                     title={user.status === 'active' ? 'Deactivate User' : 'Activate User'}
                   >
                     <FontAwesomeIcon icon={user.status === 'active' ? faLock : faUnlock} />
@@ -531,7 +532,7 @@ const UserManagement = () => {
                   </Button>
                   <Button
                     variant="danger"
-                    onClick={() => handleDeleteUser('password', user.id)}
+                    onClick={() => handleDeleteUser(user.id)}
                     title="Delete User"
                   >
                     <FontAwesomeIcon icon={faTrash} />

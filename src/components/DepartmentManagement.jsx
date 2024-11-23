@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import DepartmentService from '../services/DepartmentService';
-import { Card, Button, Input, Select, Table, Loading, Pagination, Modal } from './ui';
+import { Card, Button, Input, Select, Table, Loading, Pagination, Modal, ActionButtons } from './ui';
 import { Form } from './ui/Form';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faPlus,
+  faLock,
+  faUnlock,
   faEdit,
   faTrash,
   faChartPie
@@ -52,17 +54,26 @@ const DepartmentManagement = ({ selectedTenant }) => {
     setCurrentPage(1);
   };
 
+  const toggleStatus = async (department) => {
+    try {
+      await services['department'].updateStatus(department.id, department.status === 'active' ? 'inactive' : 'active');
+      fetchDepartments();
+    } catch (error) {
+      console.error('Failed to toggle user status:', error);
+    }
+  };
+
   const handleDeleteDepartment = async (departmentId) => {
     if (!window.confirm('Are you sure you want to delete this department?')) {
       return;
     }
 
-    // try {
-    //   await services['department'].deleteDepartment(departmentId);
-    //   fetchDepartments();
-    // } catch (error) {
-    //   console.error('Failed to delete department:', error);
-    // }
+    try {
+      await services['department'].deleteDepartment(departmentId);
+      fetchDepartments();
+    } catch (error) {
+      console.error('Failed to delete department:', error);
+    }
   };
 
   const handleOpenModal = (type, data = null) => {
@@ -298,6 +309,30 @@ const DepartmentManagement = ({ selectedTenant }) => {
     </div>);
   });
 
+  const buttons = useCallback((dept) => [
+    {
+      variant: "secondary",
+      caption: dept.status === 'active' ? 'Deactivate' : 'Activate',
+      icon: dept.status === 'active' ? faLock : faUnlock,
+      onClick: () => toggleStatus(dept),
+      ariaLabel: (dept.status === 'active' ? 'Deactivate' : 'Activate') + " Department",
+    },
+    {
+      variant: "secondary",
+      caption: "Edit",
+      icon: faEdit,
+      onClick: () => handleOpenModal('department', dept),
+      ariaLabel: "Edit Department",
+    },
+    {
+      variant: "danger",
+      caption: "Delete",
+      icon: faTrash,
+      onClick: () => handleDeleteDepartment(dept.id),
+      ariaLabel: "Delete Department",
+    },
+  ]);
+
   return (<>
     <Modal isOpen={departmentModalState.isOpen} title={departmentModalState.title} onClose={handleCloseModal}>
       <DepartmentModalContent data={departmentModalState.data} />
@@ -356,20 +391,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
                 }`}>
                     {dept.status}
                 </span>,
-                <div className="flex space-x-2">
-                    <Button
-                    variant="secondary"
-                    onClick={() => handleOpenModal('department', dept)}
-                    >
-                    <FontAwesomeIcon icon={faEdit} />
-                    </Button>
-                    <Button
-                    variant="danger"
-                    onClick={() => handleDeleteDepartment(dept.id)}
-                    >
-                    <FontAwesomeIcon icon={faTrash} />
-                    </Button>
-                </div>
+                <ActionButtons className="justify-end" large={false} small={false} buttons={buttons(dept)} />
                 ])}
             />
 

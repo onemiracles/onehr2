@@ -85,6 +85,15 @@ class DepartmentService {
     }
   }
 
+  async updateStatus(id, status) {
+    try {
+      const response = await this.api.put(`/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async deleteDepartment(id) {
     try {
       const response = await this.api.delete(`/${id}`);
