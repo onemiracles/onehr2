@@ -1,7 +1,7 @@
 import { forwardRef, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../utils';
-import { Button } from '../ui';
+import { Button, Img } from '../ui';
 
 export const Modal = forwardRef(({ isOpen, title, onClose, options, children, className, ...props }, ref) => {
     const modalRef = useRef(null);
@@ -35,13 +35,13 @@ export const Modal = forwardRef(({ isOpen, title, onClose, options, children, cl
   
     return createPortal(
       <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div className="flex items-end justify-center min-h-screen text-center sm:block">
           <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
           <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
           <div
             ref={ref}
             className={cn(
-              "inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full",
+              "inline-block align-bottom bg-white dark:bg-gray-800 text-left overflow-hidden shadow-xl transform transition-all w-full sm:rounded-lg sm:align-middle sm:w-fit sm:max-w-[100vw]",
               className
             )}
             {...props}
@@ -62,6 +62,28 @@ export const Modal = forwardRef(({ isOpen, title, onClose, options, children, cl
       </div>,
       document.body
     );
+});
+  
+export const DocumentViewerModal = forwardRef(({ url, className, ...props }, ref) => {
+  return (<div className="overflow-auto">
+    {url.endsWith(".pdf") ? (
+      <iframe
+        ref={ref}
+        src={url}
+        className={cn("w-screen h-[90vh]", className)}
+        title="Attachment Viewer"
+        {...props}
+      ></iframe>
+    ) : (
+      <Img
+        ref={ref}
+        src={url}
+        alt="Attachment"
+        className={cn("max-w-96 w-fit h-auto rounded", className)}
+        {...props}
+      />
+    )}
+  </div>);
 });
 
 export default Modal;

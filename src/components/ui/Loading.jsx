@@ -14,7 +14,7 @@ export const Loading = forwardRef(({ className, variant = 'spinner', color = 'pr
         />
     }
 
-    return (<div className="flex justify-center items-center h-64">
+    return (<div className="flex justify-center items-center h-full">
         {icon}
     </div>)
 });

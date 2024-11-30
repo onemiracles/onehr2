@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Button, Input, Select, Loading, Modal, Table, Progress } from '../../components/ui';
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { Card, Button, Input, Select, Loading, Modal, Table, Progress, ActionButtons, Thumbnail, DocumentViewerModal, Form } from '../../components/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCheck,
@@ -32,6 +32,37 @@ const LeaveRequests = () => {
   const [leaveStats, setLeaveStats] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const leaveRequestService = useMemo(() => new LeaveRequestService(user.tenantId), [user.tenantId]);
+
+  const buttons = useCallback((request) => [
+    {
+      variant: "secondary",
+      caption: "View",
+      icon: faEye,
+      ariaLabel: "View Leave Request",
+      onClick: () => handleOpenDetailModal(request)
+    },
+    ...(request.status === 'pending' ? [{
+      variant: "success",
+      caption: "Approve",
+      icon: faCheck,
+      ariaLabel: "Approve Leave Request",
+      onClick: () => handleApproveRequest(request.id)
+    },
+    {
+      variant: "danger",
+      caption: "Reject",
+      icon: faTimes,
+      ariaLabel: "Reject Leave Request",
+      onClick: () => handleRejectRequest(request.id)
+    }] : []),
+    {
+      variant: "danger",
+      caption: "Delete",
+      icon: faTrash,
+      ariaLabel: "Delete Leave Request",
+      onClick: () => handleDelete(request.id)
+    }
+  ]);
 
   useEffect(() => {
     fetchLeaveData();
@@ -120,28 +151,38 @@ const LeaveRequests = () => {
     setLeaveStats(mockStats);
   };
 
-  const handleOpenLeaveModal = (data = null) => {
+  const handleOpenLeaveModal = useCallback((data = null) => {
     setLeaveModalState(prev => ({...prev, isOpen: true, data, title: data ? 'Edit Leave Request' : 'New Leave Request'}));
-  };
+  });
 
-  const handleOpenDetailModal = (data) => {
+  const handleOpenDetailModal = useCallback((data) => {
     setDetailModalState(prev => ({...prev, isOpen: true, data}));
-  };
+  });
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setLeaveModalState(prev => ({...prev, isOpen: false}));
     setDetailModalState(prev => ({...prev, isOpen: false}));
-  };
+  });
 
-  const handleApproveRequest = async (requestId) => {
-    // Handle approval logic
-  };
+  const handleApproveRequest = useCallback(async (requestId) => {
+    try {
+      await leaveRequestService.updateStatus(requestId, 'approved');
+      fetchLeaveData();
+    } catch (error) {
+      console.error("Failed to approve request", error);
+    }
+  });
 
-  const handleRejectRequest = async (requestId) => {
-    // Handle rejection logic
-  };
+  const handleRejectRequest = useCallback(async (requestId) => {
+    try {
+      await leaveRequestService.updateStatus(requestId, 'rejected');
+      fetchLeaveData();
+    } catch (error) {
+      console.error("Failed to reject request", error);
+    }
+  });
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Are you sure you want to delete this leave request?')) {
       return;
     }
@@ -152,7 +193,7 @@ const LeaveRequests = () => {
     } catch (error) {
       console.error('Failed to delete leave request:', error);
     }
-  };
+  });
 
   const LeaveOverview = () => (
     <div className="space-y-6">
@@ -292,7 +333,7 @@ const LeaveRequests = () => {
     </div>
   );
 
-  const LeaveRequestForm = ({ data = null}) => {
+  const LeaveRequestForm = memo(({ data = null}) => {
     const initialState = data ? {
       type: data.type,
       startDate: data.startDate,
@@ -310,39 +351,46 @@ const LeaveRequests = () => {
     }
     const dispatch = useDispatch();
     const [formData, setFormData] = useState(initialState);
+    const [attachments, setAttachments] = useState([]);
     const allEmployees = useSelector((state) => state.employees[user.tenantId]?.allEmployees?.data);
 
     useEffect(() => {
       if (!allEmployees) {
         dispatch(fetchAllEmployees({ tenantId: user.tenantId }));
       }
-    }, [dispatch, allEmployees])
+    }, [dispatch, allEmployees]);
     
-    const handleChange = async (e) => {
+    const handleChange = useCallback(async (e) => {
       let { name, value, type } = e.target;
       if (type === 'number') {
         value = Number(value);
       }
       setFormData(prev => ({ ...prev, [name]: value }));
-    };
+    });
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
+    const handleAttachments = useCallback(async (e) => {
+      let { files  } = e.target;
+      files = files ? Array.from(files) : [];
+      setAttachments(files); 
+    });
+
+    const handleSubmit = useCallback(async (e) => {
       try {
         if (data) {
           await leaveRequestService.updateLeaveRequest(data.id, formData);
         } else {
-          await leaveRequestService.createLeaveRequest(formData);
+          const leaveRequest = await leaveRequestService.createLeaveRequest(formData);
+          await leaveRequestService.uploadAttactments(leaveRequest.id, attachments)
         }
         handleCloseModal();
         fetchLeaveRequests();
       } catch (error) {
         console.error('Error submitting leave request:', error);
       }
-    };
+    });
 
     return (
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <Form onSubmit={handleSubmit} className="space-y-4">
         <Select
           label="Employee"
           name="employeeId"
@@ -400,10 +448,11 @@ const LeaveRequests = () => {
         />
 
         <Input
-          label="Attachment (optional)"
-          name="attachment"
+          label="Attachments (optional)"
+          name="attachments"
           type="file"
-          onChange={handleChange}
+          onChange={handleAttachments}
+          multiple
         />
 
         <div className="flex justify-end space-x-2">
@@ -414,9 +463,119 @@ const LeaveRequests = () => {
             Submit Request
           </Button>
         </div>
-      </form>
+      </Form>
     );
-  };
+  });
+
+  const LeaveRequestDetails = memo(({ request, onClose }) => {
+    const [attachmentModalState, setAttachmentModalState] = useState({isOpen: false});
+
+    const handleOpenAttachmentModal = useCallback((attachment) => {
+      setAttachmentModalState(prev => ({...prev, isOpen: true, attachment}));
+    });
+  
+    const handleCloseAttachmentModal = useCallback(() => {
+      setAttachmentModalState(prev => ({...prev, isOpen: false}));
+    });
+
+    return (<>
+      <Modal isOpen={attachmentModalState.isOpen} onClose={handleCloseAttachmentModal} >
+        <DocumentViewerModal url={`${process.env.REACT_APP_ATTACTMENT_URL}/${attachmentModalState.attachment?.filename}`} />
+      </Modal>
+
+      <div className="space-y-6 w-[640px]">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Employee
+            </label>
+            <p className="text-gray-900 dark:text-white">{request.employee.firstName} {request.employee.lastName ?? ''}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Leave Type
+            </label>
+            <p className="text-gray-900 dark:text-white">{request.type}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Start Date
+            </label>
+            <p className="text-gray-900 dark:text-white">{formatDate(request.startDate)}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              End Date
+            </label>
+            <p className="text-gray-900 dark:text-white">{formatDate(request.endDate)}</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Total Days
+            </label>
+            <p className="text-gray-900 dark:text-white">{request.totalDays} days</p>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+              Status
+            </label>
+            <span className={`inline-block px-2 py-1 rounded-full text-xs ${
+              request.status === 'approved'
+                ? 'bg-green-100 text-green-800'
+                : request.status === 'rejected'
+                ? 'bg-red-100 text-red-800'
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+            </span>
+          </div>
+        </div>
+  
+        <div>
+          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Reason
+          </label>
+          <p className="text-gray-900 dark:text-white mt-1">{request.reason}</p>
+        </div>
+        
+        <div>
+          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            Attachments
+          </label>
+          <div className="mt-1 flex">
+            {request.attachments && request.attachments.map((attactment, index) => (<Button key={index} variant="white" onClick={() => handleOpenAttachmentModal(attactment)}>
+              <Thumbnail url={process.env.REACT_APP_ATTACTMENT_URL + '/' + attactment.filename} />
+            </Button>)
+            )}
+          </div>
+        </div>
+  
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+            Request Timeline
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-center text-sm">
+              <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+              <span className="text-gray-600 dark:text-gray-300">
+                Request submitted on {formatDate(request.createdAt)}
+              </span>
+            </div>
+            {request.status !== 'pending' && (
+              <div className="flex items-center text-sm">
+                <div className={`w-2 h-2 rounded-full ${
+                  request.status === 'approved' ? 'bg-green-500' : 'bg-red-500'
+                } mr-2`} />
+                <span className="text-gray-600 dark:text-gray-300">
+                  Request {request.status} on {formatDate(request.updatedAt)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>);
+  });
 
   if (loading) {
     return <Loading />;
@@ -490,43 +649,7 @@ const LeaveRequests = () => {
                 }`}>
                   {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                 </span>,
-                <div className="flex space-x-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleOpenDetailModal(request)}
-                    className="text-sm"
-                  >
-                    <FontAwesomeIcon icon={faEye} />
-                    View
-                  </Button>
-
-                  {request.status === 'pending' && <>
-                  <Button
-                    variant="success"
-                    onClick={() => handleApproveRequest(request.id)}
-                    className="text-sm"
-                  >
-                    <FontAwesomeIcon icon={faCheck} />
-                    Approve
-                  </Button>
-                  <Button
-                    variant="danger"
-                    onClick={() => handleRejectRequest(request.id)}
-                    className="text-sm"
-                  >
-                    <FontAwesomeIcon icon={faTimes} className="mr-1" />
-                    Reject
-                  </Button>
-                  </>}
-                  
-                  <Button
-                    variant="danger"
-                    onClick={() => handleDelete(request.id)}
-                    title="Delete User"
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </Button>
-                </div>
+                <ActionButtons buttons={buttons(request)} />
               ])}
           />
         </div>
@@ -537,108 +660,5 @@ const LeaveRequests = () => {
   </>);
 };
 
-const LeaveRequestDetails = ({ request, onClose }) => {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Employee
-          </label>
-          <p className="text-gray-900 dark:text-white">{request.employee.firstName} {request.employee.lastName ?? ''}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Leave Type
-          </label>
-          <p className="text-gray-900 dark:text-white">{request.type}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Start Date
-          </label>
-          <p className="text-gray-900 dark:text-white">{formatDate(request.startDate)}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            End Date
-          </label>
-          <p className="text-gray-900 dark:text-white">{formatDate(request.endDate)}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Total Days
-          </label>
-          <p className="text-gray-900 dark:text-white">{request.totalDays} days</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Status
-          </label>
-          <span className={`inline-block px-2 py-1 rounded-full text-xs ${
-            request.status === 'approved'
-              ? 'bg-green-100 text-green-800'
-              : request.status === 'rejected'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}>
-            {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-          </span>
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          Reason
-        </label>
-        <p className="text-gray-900 dark:text-white mt-1">{request.reason}</p>
-      </div>
-
-      {request.attachment && (
-        <div>
-          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Attachment
-          </label>
-          <div className="mt-1">
-            <Button variant="secondary">
-              <FontAwesomeIcon icon={faFileAlt} className="mr-2" />
-              Download Attachment
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-          Request Timeline
-        </h4>
-        <div className="space-y-3">
-          <div className="flex items-center text-sm">
-            <div className="w-2 h-2 rounded-full bg-green-500 mr-2" />
-            <span className="text-gray-600 dark:text-gray-300">
-              Request submitted on {formatDate(request.createdAt)}
-            </span>
-          </div>
-          {request.status !== 'pending' && (
-            <div className="flex items-center text-sm">
-              <div className={`w-2 h-2 rounded-full ${
-                request.status === 'approved' ? 'bg-green-500' : 'bg-red-500'
-              } mr-2`} />
-              <span className="text-gray-600 dark:text-gray-300">
-                Request {request.status} on {/* Add decision date here */}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button variant="secondary" onClick={onClose}>
-          Close
-        </Button>
-      </div>
-    </div>
-  );
-};
 
 export default LeaveRequests;

@@ -391,7 +391,7 @@ const DepartmentManagement = ({ selectedTenant }) => {
                 }`}>
                     {dept.status}
                 </span>,
-                <ActionButtons className="justify-end" large={false} small={false} buttons={buttons(dept)} />
+                <ActionButtons className="justify-end" buttons={buttons(dept)} />
                 ])}
             />
 

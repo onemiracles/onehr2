@@ -345,7 +345,7 @@ const EmployeeManagement = ({ selectedTenant, display = 'table' }) => {
               <p className="text-sm text-gray-600 dark:text-gray-300">{employee.position}</p>
             </div>
           </div>
-          <ActionButtons buttons={buttons} />
+          <ActionButtons large={true} small={true} buttons={buttons} />
         </div>
         <div className="mt-4 flex flex-col sm:flex-row flex-wrap w-full">
           <div className="w-1/2">

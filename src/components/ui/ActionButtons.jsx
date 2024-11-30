@@ -5,7 +5,7 @@ import { Button } from "./";
 import { cn } from "../../utils";
 import { faBars } from "@fortawesome/free-solid-svg-icons";
 
-export const ActionButtons = memo(forwardRef(({buttons, className, large = true, small = true}, ref) => {
+export const ActionButtons = memo(forwardRef(({buttons, className, large = false, small = false}, ref) => {
   const defaultClassName = small ? "hidden sm:flex sm:space-x-2" : "flex space-x-2";
   return (<>
     <div ref={ref} className={cn(defaultClassName, className)}>
